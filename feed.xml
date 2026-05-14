@@ -14,14 +14,16 @@
     <copyright>© 洪正幸</copyright>
     <managingEditor>oomizumasayuki@gmail.com (洪正幸)</managingEditor>
     <webMaster>oomizumasayuki@gmail.com (洪正幸)</webMaster>
-    <lastBuildDate>__LAST_BUILD_DATE__</lastBuildDate>
+    <lastBuildDate>Thu, 14 May 2026 13:24:56 +0000</lastBuildDate>
     <generator>koseiyuki-blog-to-podcast skill</generator>
+
 
     <image>
       <url>https://oomizu3.github.io/podcast-rss/cover.jpg</url>
       <title>宇宙の兄弟たちへ</title>
       <link>https://www.spacebrothers.jp/</link>
     </image>
+
 
     <itunes:author>洪正幸</itunes:author>
     <itunes:summary>ブログ『宇宙の兄弟たちへ』の記事を音声で届けるポッドキャスト。アセンション、死後の世界、スターシード、ソウルメイト、ツインレイなど、見えない世界のテーマを洪正幸の文章をベースに音声化します。</itunes:summary>
@@ -34,18 +36,3 @@
     <itunes:category text="Religion &amp; Spirituality">
       <itunes:category text="Spirituality"/>
     </itunes:category>
-    <itunes:explicit>false</itunes:explicit>
-    <itunes:keywords>スピリチュアル,アセンション,死後の世界,スターシード,ソウルメイト,ツインレイ,洪正幸,宇宙の兄弟たち,spacebrothers</itunes:keywords>
-
-    <googleplay:author>洪正幸</googleplay:author>
-    <googleplay:email>oomizumasayuki@gmail.com</googleplay:email>
-    <googleplay:image href="https://oomizu3.github.io/podcast-rss/cover.jpg"/>
-    <googleplay:category text="Religion &amp; Spirituality"/>
-    <googleplay:explicit>no</googleplay:explicit>
-
-    <!-- ITEMS_START -->
-    <!-- 新規エピソードはこのコメントの直後に挿入される。最新が上。 -->
-    <!-- ITEMS_END -->
-
-  </channel>
-</rss>
