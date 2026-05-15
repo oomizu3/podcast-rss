@@ -12,8 +12,8 @@
     <description>ブログ『宇宙の兄弟たちへ』(spacebrothers.jp) の記事を音声で届けるポッドキャストです。アセンション、死後の世界、スターシード、ソウルメイト、ツインレイなど、見えない世界のテーマを、洪正幸の文章をベースに音声化していきます。家事の合間、移動中、寝る前のひととき。読むのではなく耳を傾ける形で、宇宙の兄弟たちからのメッセージを受け取ってください。</description>
     <language>ja</language>
     <copyright>© 洪正幸</copyright>
-    <managingEditor>oomizumasayuki@gmail.com (æ´ªæ­£å¹¸)</managingEditor>
-    <webMaster>oomizumasayuki@gmail.com (æ´ªæ­£å¹¸)</webMaster>
+    <managingEditor>oomizumasayuki@gmail.com (洪正幸)</managingEditor>
+    <webMaster>oomizumasayuki@gmail.com (洪正幸)</webMaster>
     <lastBuildDate>Fri, 15 May 2026 02:14:42 +0000</lastBuildDate>
     <generator>koseiyuki-blog-to-podcast skill</generator>
 
@@ -23,11 +23,11 @@
       <link>https://www.spacebrothers.jp/</link>
     </image>
 
-    <itunes:author>æ´ªæ­£å¹¸</itunes:author>
+    <itunes:author>洪正幸</itunes:author>
     <itunes:summary>ブログ『宇宙の兄弟たちへ』の記事を音声で届けるポッドキャスト。アセンション、死後の世界、スターシード、ソウルメイト、ツインレイなど、見えない世界のテーマを洪正幸の文章をベースに音声化します。</itunes:summary>
     <itunes:type>episodic</itunes:type>
     <itunes:owner>
-      <itunes:name>æ´ªæ­£å¹¸</itunes:name>
+      <itunes:name>洪正幸</itunes:name>
       <itunes:email>oomizumasayuki@gmail.com</itunes:email>
     </itunes:owner>
     <itunes:image href="https://oomizu3.github.io/podcast-rss/cover.jpg"/>
@@ -37,7 +37,7 @@
     <itunes:explicit>false</itunes:explicit>
     <itunes:keywords>スピリチュアル,アセンション,死後の世界,スターシード,ソウルメイト,ツインレイ,洪正幸,宇宙の兄弟たち,spacebrothers</itunes:keywords>
 
-    <googleplay:author>æ´ªæ­£å¹¸</googleplay:author>
+    <googleplay:author>洪正幸</googleplay:author>
     <googleplay:email>oomizumasayuki@gmail.com</googleplay:email>
     <googleplay:image href="https://oomizu3.github.io/podcast-rss/cover.jpg"/>
     <googleplay:category text="Religion &amp; Spirituality"/>
@@ -68,7 +68,7 @@
       <guid isPermaLink="false">https://oomizu3.github.io/podcast-rss/episodes/20260515-021442-ascension-symptoms-7-mindsets.mp3</guid>
       <link>https://www.spacebrothers.jp/2026/05/ascension-symptoms-overcome-7-mindsets.html</link>
       <enclosure url="https://oomizu3.github.io/podcast-rss/episodes/20260515-021442-ascension-symptoms-7-mindsets.mp3" length="5325679" type="audio/mpeg"/>
-      <itunes:author>æ´ªæ­£å¹¸</itunes:author>
+      <itunes:author>洪正幸</itunes:author>
       <itunes:duration>333</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
       <itunes:episodeType>full</itunes:episodeType>
@@ -83,7 +83,7 @@
       <guid isPermaLink="false">https://oomizu3.github.io/podcast-rss/episodes/20260514-125436-lightworker-2.mp3</guid>
       <link>https://www.spacebrothers.jp/</link>
       <enclosure url="https://oomizu3.github.io/podcast-rss/episodes/20260514-125436-lightworker-2.mp3" length="2566622" type="audio/mpeg"/>
-      <itunes:author>æ´ªæ­£å¹¸</itunes:author>
+      <itunes:author>洪正幸</itunes:author>
       <itunes:duration>158</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
       <itunes:episodeType>full</itunes:episodeType>
@@ -98,7 +98,7 @@
       <guid isPermaLink="false">https://oomizu3.github.io/podcast-rss/episodes/20260514-125120-lightworker-1.mp3</guid>
       <link>https://www.spacebrothers.jp/</link>
       <enclosure url="https://oomizu3.github.io/podcast-rss/episodes/20260514-125120-lightworker-1.mp3" length="5088170" type="audio/mpeg"/>
-      <itunes:author>æ´ªæ­£å¹¸</itunes:author>
+      <itunes:author>洪正幸</itunes:author>
       <itunes:duration>315</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
       <itunes:episodeType>full</itunes:episodeType>
@@ -113,7 +113,7 @@
       <guid isPermaLink="false">https://oomizu3.github.io/podcast-rss/episodes/20260514-144055-ascension-body-v2.mp3</guid>
       <link>https://www.spacebrothers.jp/2026/05/ascension-body-purification-food-sleep-breath.html</link>
       <enclosure url="https://oomizu3.github.io/podcast-rss/episodes/20260514-144055-ascension-body-v2.mp3" length="7156341" type="audio/mpeg"/>
-      <itunes:author>æ´ªæ­£å¹¸</itunes:author>
+      <itunes:author>洪正幸</itunes:author>
       <itunes:duration>447</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
       <itunes:episodeType>full</itunes:episodeType>
