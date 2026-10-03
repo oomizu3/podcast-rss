@@ -1,0 +1,1663 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>記事投稿</title>
+<meta name="description" content="記事投稿（schoolpost）のスマホ版。原稿を書いてもらい、直して、GitHub Actions 経由で下書き投稿する">
+<meta name="theme-color" content="#1f3a5f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1726" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f5f0e4; --surface:#fffdf7; --surface2:#efe8d8; --text:#1d2740; --muted:#5d6577;
+  --line:#d8cfba; --navy:#1f3a5f; --navy-text:#fffdf7; --accent:#9a7a34; --danger:#9b2c2c;
+  --ok:#2f6b3f; --warn:#8a5a00; --focus:#c99a3a; --warnbg:#fbefd2;
+  --fs:17px; --body-fs:19px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1726; --surface:#172238; --surface2:#1f2c46; --text:#ece6d8; --muted:#a9b0bf;
+    --line:#2c3a57; --navy:#8fb3e0; --navy-text:#0f1726; --accent:#d4b46a; --danger:#e08a8a;
+    --ok:#8ccf9c; --warn:#e6c06a; --focus:#d4b46a; --warnbg:#3a2f14;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;
+  font-size:var(--fs);line-height:1.65;-webkit-text-size-adjust:100%;overflow-x:hidden}
+header.top{position:sticky;top:0;z-index:5;background:var(--navy);color:var(--navy-text);padding:10px 16px;
+  display:flex;align-items:center;gap:10px;padding-top:max(10px, env(safe-area-inset-top))}
+header.top h1{font-size:19px;margin:0;font-weight:700;flex:1;letter-spacing:.04em}
+header.top .act{font-size:14px;opacity:.9}
+main{padding:12px 16px 120px;max-width:640px;margin:0 auto}
+section.tab{display:none}
+section.tab.on{display:block}
+h2{font-size:20px;margin:6px 0 10px}
+h3{font-size:18px;margin:4px 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
+.card.sub{background:var(--surface2)}
+label.f{display:block;font-size:15px;color:var(--muted);margin:8px 0 4px}
+input[type=text],input[type=url],input[type=password],input[type=number],select,textarea{
+  width:100%;font-size:var(--fs);font-family:inherit;color:var(--text);background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:48px}
+textarea{line-height:1.8}
+textarea.body{font-size:var(--body-fs);line-height:1.95;min-height:55vh;padding:12px}
+textarea.mid{font-size:var(--body-fs);line-height:1.9;min-height:22vh;padding:12px}
+textarea.brief{font-size:var(--body-fs);line-height:1.9;min-height:40vh;padding:12px}
+input.title{font-size:var(--body-fs);font-weight:700}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+button,.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:10px 14px;
+  font-size:var(--fs);font-family:inherit;border-radius:10px;border:1px solid var(--navy);background:var(--surface);
+  color:var(--navy);cursor:pointer;text-decoration:none;line-height:1.35;text-align:center}
+button.pri,.btn.pri{background:var(--navy);color:var(--navy-text)}
+button.danger{border-color:var(--danger);color:var(--danger)}
+button.pri.danger{background:var(--danger);color:#fff}
+button.small,.btn.small{min-height:48px;padding:6px 12px;font-size:15px}
+button:disabled{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 auto}
+.stack{display:flex;flex-direction:column;gap:8px}
+.stack > button{width:100%}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg label{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--navy);border-radius:10px;
+  color:var(--navy);font-weight:700;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg input:checked + span{color:var(--navy-text)}
+.seg label:has(input:checked){background:var(--navy)}
+.seg label:has(input:focus-visible){outline:3px solid var(--focus)}
+.muted{color:var(--muted);font-size:15px}
+.note{font-size:15px;color:var(--muted);margin:6px 0}
+.warn{color:var(--warn)}
+.err{color:var(--danger)}
+.okc{color:var(--ok)}
+.dirty{color:var(--danger);font-size:15px;min-height:1.4em}
+.banner{border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-weight:700}
+.banner.ng{background:var(--warnbg);color:var(--warn);border:2px solid var(--warn)}
+.banner.ok{border:1px solid var(--ok);color:var(--ok)}
+pre{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.55;background:var(--surface2);
+  padding:10px;border-radius:8px;max-height:60vh;overflow:auto;margin:6px 0}
+.textview{white-space:pre-wrap;word-break:break-word;font-size:16px;line-height:1.8;background:var(--surface2);padding:10px;border-radius:8px;margin:6px 0}
+details{margin:0 0 14px}
+details > summary{cursor:pointer;min-height:48px;display:flex;align-items:center;font-weight:700;font-size:18px;
+  padding:6px 4px;list-style:none}
+details > summary::before{content:"▸";margin-right:8px;color:var(--accent)}
+details[open] > summary::before{content:"▾"}
+.list .item{border-top:1px solid var(--line);padding:10px 0}
+.list .item:first-child{border-top:0}
+.item .t{font-weight:700}
+.item .meta{font-size:14px;color:var(--muted)}
+.tag{display:inline-block;font-size:13px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin-right:4px;color:var(--muted)}
+.tag.run{border-color:var(--accent);color:var(--accent)}
+.tag.ok{border-color:var(--ok);color:var(--ok)}
+.tag.ng{border-color:var(--danger);color:var(--danger)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chips button{min-height:44px;font-size:15px;padding:6px 10px;text-align:left;justify-content:flex-start}
+.imgbox img{width:100%;border-radius:8px;display:block;margin:6px 0;background:var(--surface2)}
+.copyrow{border-top:1px solid var(--line);padding:10px 0}
+.copyrow:first-child{border-top:0}
+.copyrow .head{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.copyrow .head .muted{flex:1}
+.copyrow .head button{flex:0 0 auto;min-width:96px}
+.copyrow .val{white-space:pre-wrap;word-break:break-word;font-size:16px;line-height:1.7;background:var(--surface2);padding:8px 10px;border-radius:8px;margin-top:6px;max-height:40vh;overflow:auto}
+.chk{display:flex;align-items:center;gap:10px;min-height:48px;font-size:var(--fs)}
+.chk input{width:26px;height:26px;flex:0 0 auto}
+ul.checks{list-style:none;padding:0;margin:6px 0}
+ul.checks li{padding:4px 0;border-top:1px dashed var(--line)}
+ul.checks li:first-child{border-top:0}
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav.bottom button{border:0;border-radius:0;background:transparent;color:var(--muted);flex-direction:column;gap:0;
+  min-height:62px;padding:6px 0;font-size:14px}
+nav.bottom button .ic{font-size:20px;line-height:1.1}
+nav.bottom button.on{color:var(--navy);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
+nav.bottom .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font-size:12px;line-height:18px}
+#toast{position:fixed;left:16px;right:16px;bottom:84px;z-index:20;background:var(--navy);color:var(--navy-text);
+  padding:12px 14px;border-radius:10px;font-size:16px;display:none;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.fsbar{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.fsbar button{min-width:56px}
+a{color:var(--navy)}
+.kv{display:grid;grid-template-columns:7em 1fr;gap:2px 8px;font-size:15px}
+.kv > div:nth-child(odd){color:var(--muted)}
+.kv > div{word-break:break-word}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>記事投稿</h1>
+  <span class="act" id="activeInfo"></span>
+</header>
+
+<main>
+<!-- ============================== 書く ============================== -->
+<section class="tab on" id="tab-write">
+  <h2>原稿を書いてもらう</h2>
+  <div class="card">
+    <label class="f">種類</label>
+    <div class="seg" role="radiogroup" aria-label="種類">
+      <label><input type="radio" name="wrKind" value="school" checked><span>スクール記事</span></label>
+      <label><input type="radio" name="wrKind" value="blog"><span>ブログ記事</span></label>
+    </div>
+    <label class="f" for="wrChars">字数の目安（本文）</label>
+    <input type="number" id="wrChars" inputmode="numeric" step="100" min="1000" max="6000">
+    <p class="note" id="wrCharsNote"></p>
+    <label class="f" for="wrBrief">概要</label>
+    <p class="note">主題・伝えたいこと・実際にあった体験や受けた質問の要旨を書いてください。<b>書いていない体験談は作りません。</b>相談の話を入れたいときは、ここにその要旨を書きます。</p>
+    <textarea class="brief" id="wrBrief" spellcheck="false" placeholder="例：主題は「守護霊と守護天使の違い」。サロンで「守護天使は誰にでもいるのか」と質問をいただいた。伝えたいのは、守護霊は一人ひとりに付き、守護天使は役目で関わる存在だということ。瞑想中に見えた光の見え方も入れたい。"></textarea>
+    <div class="muted" id="wrBriefCount"></div>
+    <div class="stack" style="margin-top:8px">
+      <button class="pri" id="wrGo">書いてもらう</button>
+      <button id="wrRestore" class="small hidden">前に送った概要を欄に戻す</button>
+    </div>
+    <p class="note">書き上がるまで5〜15分かかります。画面を閉じても大丈夫です（開き直せば続きを追います）。書いた原稿は下書き投稿まではしません。</p>
+  </div>
+
+  <div class="card" id="wrResult">
+    <p class="muted">書き上がると、ここに要約が出ます。</p>
+  </div>
+
+  <details class="card" id="wrPastBox">
+    <summary>これまでに頼んだ原稿</summary>
+    <div class="list" id="wrPast"></div>
+  </details>
+</section>
+
+<!-- ============================== スクール記事 ============================== -->
+<section class="tab" id="tab-school">
+  <div id="scListView">
+    <h2>スクール記事</h2>
+    <div class="row" style="margin-bottom:10px"><button id="scRefresh" class="small">一覧を取り直す</button></div>
+    <p class="note" id="scCount"></p>
+    <div class="card list" id="scList"></div>
+    <button id="scMore" class="hidden" style="width:100%">もっと見る</button>
+  </div>
+
+  <div id="scDetailView" class="hidden">
+    <button id="scBack" class="small">← 一覧へ戻る</button>
+    <div class="card" style="margin-top:10px">
+      <div class="muted" id="scJob"></div>
+      <div class="kv" id="scInfo"></div>
+    </div>
+
+    <div class="card">
+      <label class="f" for="scTitle">タイトル</label>
+      <input type="text" class="title" id="scTitle" autocomplete="off">
+      <div class="chips" id="scCands"></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px">
+        <h3 style="flex:0 1 auto">本文</h3>
+        <div class="fsbar" style="flex:0 1 auto"><span class="muted">文字</span><button class="small fsminus">小</button><button class="small fsplus">大</button></div>
+      </div>
+      <p class="note">段落は空行で区切ります。句点「。」の直後は空行（二回改行）にします。見出し・太字・箇条書きは使いません。</p>
+      <textarea class="body" id="scBody" spellcheck="false"></textarea>
+      <div class="muted" id="scBodyCount"></div>
+      <div class="dirty" id="scDirty"></div>
+      <div class="row">
+        <button class="pri" id="scSave">保存する</button>
+        <button id="scRevert">保存前に戻す</button>
+      </div>
+      <p class="note">保存すると GitHub（main）の article.md の title 行と本文だけを書き換えます。PC の schoolpost には「GitHub と同期」で入ります（PC でも同じ原稿を直していたら、同期のとき PC 側が優先されます）。</p>
+    </div>
+
+    <div class="card">
+      <h3>投稿状況</h3>
+      <div id="scStatus"></div>
+      <p class="note">note と DMM ラウンジへの下書きは PC の schoolpost で行います（専用ブラウザが要るので、クラウドからは投稿できません）。</p>
+      <p class="note warn">WordPress の会員保護（購読会員＋アカデミー会員）は、WordPress の管理画面で手で設定します。</p>
+      <button id="scResReload" class="small" style="width:100%">投稿状況を読み直す</button>
+    </div>
+
+    <div class="card">
+      <h3>操作</h3>
+      <div class="stack">
+        <button class="pri" id="scPostWp">WordPress に下書き</button>
+        <button id="scEye">アイキャッチを作る</button>
+        <button id="scCheck">点検</button>
+        <button class="danger" id="scDelWp">WordPress の下書きを消す</button>
+      </div>
+      <div id="scCheckOut"></div>
+    </div>
+
+    <div class="card">
+      <h3>アイキャッチ</h3>
+      <div class="imgbox" id="scImg"></div>
+    </div>
+
+    <details class="card">
+      <summary>投稿の記録</summary>
+      <pre id="scLog"></pre>
+    </details>
+  </div>
+</section>
+
+<!-- ============================== ブログ記事 ============================== -->
+<section class="tab" id="tab-blog">
+  <div id="blListView">
+    <h2>ブログ記事</h2>
+    <div class="row" style="margin-bottom:10px"><button id="blRefresh" class="small">一覧を取り直す</button></div>
+    <p class="note" id="blCount"></p>
+    <div class="card list" id="blList"></div>
+    <button id="blMore" class="hidden" style="width:100%">もっと見る</button>
+  </div>
+
+  <div id="blDetailView" class="hidden">
+    <button id="blBack" class="small">← 一覧へ戻る</button>
+    <div class="card" style="margin-top:10px">
+      <div class="muted" id="blJob"></div>
+      <div class="kv" id="blInfo"></div>
+    </div>
+
+    <div class="card">
+      <label class="f" for="blTitle">タイトル</label>
+      <input type="text" class="title" id="blTitle" autocomplete="off">
+      <div class="chips" id="blCands"></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px">
+        <h3 style="flex:0 1 auto">本文（Blogger に投稿する文）</h3>
+        <div class="fsbar" style="flex:0 1 auto"><span class="muted">文字</span><button class="small fsminus">小</button><button class="small fsplus">大</button></div>
+      </div>
+      <p class="note">段落は空行で区切ります。見出しは行頭に「## 」。リンクは [文](URL)。太字は使いません。</p>
+      <textarea class="body" id="blBody" spellcheck="false"></textarea>
+      <div class="muted" id="blBodyCount"></div>
+      <div class="dirty" id="blDirtyArt"></div>
+      <div class="row">
+        <button class="pri" id="blSaveArt">本文を保存</button>
+        <button id="blRevert">保存前に戻す（全部の欄）</button>
+      </div>
+      <p class="note" id="blSrcNote"></p>
+    </div>
+
+    <div class="card">
+      <h3>X</h3>
+      <label class="f" for="blX">X 本文（全角140字まで。リンク・ハッシュタグは入れない）</label>
+      <textarea class="mid" id="blX" spellcheck="false"></textarea>
+      <div id="blXCount" class="muted"></div>
+      <label class="f" for="blXr">先頭リプライ（{{BLOG_URL}} が公開 URL に置き換わります）</label>
+      <textarea class="mid" id="blXr" spellcheck="false" style="min-height:14vh"></textarea>
+      <div class="dirty" id="blDirtyX"></div>
+      <div class="stack">
+        <button class="pri" id="blSaveX">X の文を保存</button>
+        <button id="blXPost">X に本文を投稿</button>
+        <button id="blXReply">リンクを返信（公開後）</button>
+      </div>
+      <div id="blXStatus" class="note"></div>
+    </div>
+
+    <div class="card">
+      <h3>アメブロ版</h3>
+      <p class="note">1行目「TITLE: …」、2行目「HASHTAGS: …」、「===BODY===」の下が本文（HTML）。{{BLOG_URL}} は残しておけば、公開 URL に置き換えて下のコピー欄に出ます。</p>
+      <textarea class="mid" id="blAm" spellcheck="false" style="min-height:40vh"></textarea>
+      <div class="dirty" id="blDirtyAm"></div>
+      <button class="pri" id="blSaveAm" style="width:100%">アメブロ版を保存</button>
+    </div>
+
+    <div class="card">
+      <h3>投稿状況</h3>
+      <div id="blStatus"></div>
+      <button id="blResReload" class="small" style="width:100%;margin-top:8px">投稿状況を読み直す</button>
+    </div>
+
+    <div class="card">
+      <h3>操作</h3>
+      <div class="stack">
+        <button class="pri" id="blPost">Blogger に下書き</button>
+        <button id="blUrl">Blogger から取り直す（公開後）</button>
+        <button id="blEye">アイキャッチを作る</button>
+        <button class="danger" id="blDel">Blogger の下書きを消す</button>
+      </div>
+      <p class="note">流れ：Blogger に下書き →（Blogger の編集画面で下のパーマリンク・検索向け説明・アイキャッチを入れて公開）→「Blogger から取り直す」→ X のリンク返信・アメブロに貼る。</p>
+    </div>
+
+    <div class="card">
+      <h3>手で貼るもの</h3>
+      <div id="blCopy"></div>
+    </div>
+
+    <div class="card">
+      <h3>アイキャッチ</h3>
+      <div class="imgbox" id="blImg"></div>
+    </div>
+
+    <details class="card">
+      <summary>投稿の記録</summary>
+      <pre id="blLog"></pre>
+    </details>
+  </div>
+</section>
+
+<!-- ============================== 状況 ============================== -->
+<section class="tab" id="tab-status">
+  <div id="stListView">
+    <h2>実行状況</h2>
+    <div class="row" style="margin-bottom:10px">
+      <button id="stPoll" class="small">今すぐ確かめる</button>
+      <button id="stClear" class="small">終わったものを消す</button>
+    </div>
+    <div class="card list" id="stList"></div>
+  </div>
+  <div id="stDetailView" class="hidden">
+    <button id="stBack" class="small">← 一覧へ戻る</button>
+    <div id="stDetail" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ============================== 設定 ============================== -->
+<section class="tab" id="tab-settings">
+  <h2>設定</h2>
+  <div class="card">
+    <h3>GitHub のトークン</h3>
+    <p class="note"><b>kpipe のアプリと共通です。</b>kpipe のアプリで保存したトークンがあれば、そのまま使えます（ここで変えると kpipe のアプリの側も変わります）。</p>
+    <ol class="note" style="padding-left:1.3em">
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">トークン作成ページを開く</a></li>
+      <li>「Repository access」で「Only select repositories」を選び、koseiyuki-auto だけを選ぶ</li>
+      <li>「Repository permissions」で次の3つを「Read and write」にする：Actions（動かす）／Contents（原稿・結果の読み書き）／Issues</li>
+      <li>有効期限は長めに（切れたら作り直して貼り直す）</li>
+    </ol>
+    <label class="f" for="setToken">トークン</label>
+    <input type="password" id="setToken" autocomplete="off" placeholder="github_pat_...">
+    <label class="chk"><input type="checkbox" id="setShow">トークンを表示する</label>
+    <label class="f" for="setRepo">リポジトリ</label>
+    <input type="text" id="setRepo" autocomplete="off" placeholder="oomizu3/koseiyuki-auto">
+    <div class="row" style="margin-top:8px">
+      <button class="pri" id="setSave">保存する</button>
+      <button id="setTest">つながるか確かめる</button>
+    </div>
+    <p class="note" id="setNote"></p>
+    <p class="note">トークンはこのスマホのブラウザの中だけに保存します。</p>
+  </div>
+
+  <div class="card">
+    <h3>文字の大きさ</h3>
+    <div class="row">
+      <button class="fsset" data-k="0">標準</button>
+      <button class="fsset" data-k="1">大きめ</button>
+      <button class="fsset" data-k="2">特大</button>
+    </div>
+    <p class="note">本文の欄は、各画面の「文字 小／大」でさらに変えられます。</p>
+  </div>
+
+  <div class="card">
+    <h3>X に投稿するには</h3>
+    <p class="note">「X に本文を投稿」「リンクを返信」は GitHub Actions が X API で行います。リポジトリの Settings → Secrets and variables → Actions に、X の鍵を4つ入れておいてください：X_API_KEY／X_API_SECRET／X_ACCESS_TOKEN／X_ACCESS_TOKEN_SECRET（PC の _auth/.credentials.txt にあるものと同じ値）。</p>
+    <p class="note">原稿書き（ANTHROPIC_API_KEY）、アイキャッチ（OPENAI_API_KEY）、WordPress（WP_APP_PWD）も Secrets の鍵を使います。</p>
+  </div>
+
+  <div class="card">
+    <h3>そのほか</h3>
+    <button id="setCacheClear" style="width:100%">読み込んだデータの控えを消す</button>
+    <p class="note">重い処理はすべて GitHub Actions（workflow kpipe-remote.yml）が行います。このアプリは頼んで、結果を読むだけです。原稿の直しの保存だけは、このアプリが GitHub に直接書き込みます。</p>
+  </div>
+</section>
+</main>
+
+<nav class="bottom" id="nav">
+  <button data-tab="write" class="on"><span class="ic">✎</span>書く</button>
+  <button data-tab="school"><span class="ic">❖</span>スクール</button>
+  <button data-tab="blog"><span class="ic">✦</span>ブログ</button>
+  <button data-tab="status"><span class="ic">◷</span><span>状況 <span class="badge hidden" id="navBadge"></span></span></button>
+  <button data-tab="settings"><span class="ic">⚙</span>設定</button>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================ 基本 */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function mkStore(P) {
+  return {
+    get(k, d) { try { const v = localStorage.getItem(P + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(P + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(P + k); } catch (e) {} },
+  };
+}
+const shared = mkStore("kpipe.");        // トークンとリポジトリは kpipe のアプリと共通（同じ置き場所・同じキー）
+const store = mkStore("schoolpost.");    // このアプリだけのもの（要求の履歴・文字の大きさなど）
+let toastTimer = null;
+function toast(msg, ms) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.display = "none"; }, ms || 3500);
+}
+
+const BRANCH = "kpipe-remote";
+const WORKFLOW = "kpipe-remote.yml";
+// kpipe/remote.py の許可リストと同じ（schoolpost の note・DMM はクラウドから使えない）
+const SCHOOLPOST_OK = ["list", "build", "check", "post", "eyecatch", "blog-url", "x-post", "x-reply", "delete-drafts"];
+const KIND = {
+  school: {dir: "school/jobs", p: "sc", label: "スクール記事", media: ["wp", "note", "dmm"], chars: 2500, range: "1,500〜3,000"},
+  blog:   {dir: "blog/jobs",   p: "bl", label: "ブログ記事",   media: ["blogger"],          chars: 3500, range: "2,500〜4,500"},
+};
+const MEDIA_LABEL = {wp: "WordPress", note: "note", dmm: "DMM ラウンジ", blogger: "Blogger", x: "X 本文", x_reply: "X リンク返信"};
+const DEFAULT_X_REPLY = "この話はブログに書きました。\n{{BLOG_URL}}";
+const X_LIMIT = 280;   // X の換算上限（全角140字）
+
+/* ============================================================ 設定 */
+function token() { return shared.get("token", ""); }
+function repo() { return shared.get("repo", "") || "oomizu3/koseiyuki-auto"; }
+
+/* ============================================================ 文字の大きさ */
+const FS_LEVELS = [[17, 19], [19, 21], [21, 24]];
+function applyFs() {
+  const k = Math.max(0, Math.min(2, store.get("fs", 0)));
+  const extra = store.get("bodyExtra", 0);
+  document.documentElement.style.setProperty("--fs", FS_LEVELS[k][0] + "px");
+  document.documentElement.style.setProperty("--body-fs", Math.max(18, Math.min(32, FS_LEVELS[k][1] + extra)) + "px");
+  document.querySelectorAll(".fsset").forEach(b => b.classList.toggle("pri", Number(b.dataset.k) === k));
+}
+document.querySelectorAll(".fsminus").forEach(b => b.addEventListener("click", () => { store.set("bodyExtra", store.get("bodyExtra", 0) - 2); applyFs(); }));
+document.querySelectorAll(".fsplus").forEach(b => b.addEventListener("click", () => { store.set("bodyExtra", store.get("bodyExtra", 0) + 2); applyFs(); }));
+
+/* ============================================================ GitHub API */
+class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+async function gh(path, opts) {
+  opts = opts || {};
+  if (!token()) throw new ApiError(0, "トークンが未設定です。「設定」でトークンを貼ってください。");
+  const url = path.startsWith("http") ? path : "https://api.github.com" + path;
+  const headers = {
+    "Authorization": "Bearer " + token(),
+    "Accept": (opts.raw || opts.blob) ? "application/vnd.github.raw+json" : "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (opts.body) headers["Content-Type"] = "application/json";
+  let res;
+  try {
+    res = await fetch(url, {method: opts.method || "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined, cache: "no-store"});
+  } catch (e) {
+    throw new ApiError(-1, "通信できませんでした（電波・接続を確かめてください）");
+  }
+  if (res.status === 204) return null;
+  if (!res.ok) {
+    let msg = "";
+    try { const j = await res.json(); msg = j.message || ""; } catch (e) {}
+    const human = {
+      401: "トークンが正しくないか、期限が切れています（設定で貼り直してください）",
+      403: "権限が足りないか、回数の上限に達しました",
+      404: "見つかりません",
+      409: "ぶつかりました（ほかで先に書き換えられています）",
+      422: "受け付けられない内容です",
+    }[res.status] || ("GitHub がエラーを返しました（" + res.status + "）");
+    throw new ApiError(res.status, human + (msg ? "：" + msg : ""));
+  }
+  if (opts.blob) return await res.blob();
+  if (opts.raw) return await res.text();
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("json") ? await res.json() : await res.text();
+}
+function encPath(p) { return p.split("/").map(encodeURIComponent).join("/"); }
+function b64utf8(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function utf8b64(b64) {
+  const bin = atob(String(b64 || "").replace(/\s/g, ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+/* 読むだけ（main）。短時間の控えを持つ */
+const cache = new Map();
+const CACHE_MS = 90 * 1000;
+function cacheClear(prefix) { for (const k of Array.from(cache.keys())) if (!prefix || k.includes(prefix)) cache.delete(k); }
+async function readText(path, ref) {
+  const key = "t:" + (ref || "main") + ":" + path;
+  const c = cache.get(key);
+  if (c && Date.now() - c.at < CACHE_MS) return c.v;
+  const v = await gh(`/repos/${repo()}/contents/${encPath(path)}?ref=${encodeURIComponent(ref || "main")}`, {raw: true});
+  cache.set(key, {at: Date.now(), v});
+  return v;
+}
+async function readTextOr(path, dflt) {
+  try { return await readText(path); } catch (e) { if (e.status === 404) return dflt; throw e; }
+}
+async function readJsonOr(path, dflt) {
+  const t = await readTextOr(path, null);
+  if (t == null) return dflt;
+  try { return JSON.parse(t.replace(/^﻿/, "")); } catch (e) { return dflt; }
+}
+async function listDir(path) {
+  const key = "d:" + path;
+  const c = cache.get(key);
+  if (c && Date.now() - c.at < CACHE_MS) return c.v;
+  const v = await gh(`/repos/${repo()}/contents/${encPath(path)}?ref=main`);
+  const arr = Array.isArray(v) ? v : [];
+  cache.set(key, {at: Date.now(), v: arr});
+  return arr;
+}
+/* 書き換える前提で読む（控えを使わず、sha も取る） */
+async function readFile(path) {
+  const j = await gh(`/repos/${repo()}/contents/${encPath(path)}?ref=main`);
+  if (!j || Array.isArray(j)) throw new ApiError(0, path + " はファイルではありません");
+  let text;
+  if (j.content || !j.size) text = utf8b64(j.content || "");
+  else text = await gh(`/repos/${repo()}/contents/${encPath(path)}?ref=main`, {raw: true});   // 1MB を超えると content が空
+  return {text: text.replace(/^﻿/, ""), sha: j.sha};
+}
+async function readFileOr(path) {
+  try { return await readFile(path); } catch (e) { if (e.status === 404) return null; throw e; }
+}
+async function putFile(path, text, sha, message) {
+  const body = {message, branch: "main", content: b64utf8(text)};
+  if (sha) body.sha = sha;
+  const r = await gh(`/repos/${repo()}/contents/${encPath(path)}`, {method: "PUT", body});
+  cacheClear(path);
+  return r && r.content ? r.content.sha : null;
+}
+async function pool(items, n, fn) {
+  const out = new Array(items.length); let i = 0;
+  await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => {
+    while (i < items.length) { const k = i++; try { out[k] = await fn(items[k], k); } catch (e) { out[k] = {error: e}; } }
+  }));
+  return out;
+}
+
+/* ============================================================ 原稿の形（フロントマター・本文） */
+function splitFront(raw) {
+  const text = String(raw || "").replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  if (!text.startsWith("---")) throw new Error("article.md が「---」で始まっていません（フロントマターが無い）");
+  const lines = text.split("\n");
+  let end = -1;
+  for (let i = 1; i < lines.length; i++) { const s = lines[i].trim(); if (s === "---" || s === "...") { end = i; break; } }
+  if (end < 0) throw new Error("フロントマターを閉じる「---」がありません");
+  return {lines, end, front: lines.slice(1, end), body: lines.slice(end + 1).join("\n")};
+}
+function splitInline(s) {
+  const out = []; let cur = "", q = null;
+  for (const ch of s) {
+    if (q) { cur += ch; if (ch === q) q = null; }
+    else if (ch === '"' || ch === "'") { q = ch; cur += ch; }
+    else if (ch === ",") { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  if (cur.trim()) out.push(cur);
+  return out;
+}
+function yScalar(s) {
+  s = String(s).trim();
+  if (s === "" || s === "~" || s === "null") return null;
+  if (s.length >= 2 && s[0] === s[s.length - 1] && (s[0] === '"' || s[0] === "'")) {
+    const inner = s.slice(1, -1);
+    return s[0] === '"' ? inner.replace(/\\"/g, '"').replace(/\\\\/g, "\\") : inner;
+  }
+  if (s.startsWith("[") && s.endsWith("]")) {
+    const inner = s.slice(1, -1).trim();
+    return inner ? splitInline(inner).map(yScalar) : [];
+  }
+  if (/^(true|yes)$/i.test(s)) return true;
+  if (/^(false|no)$/i.test(s)) return false;
+  return s;
+}
+const indentOf = (l) => l.length - l.replace(/^ +/, "").length;
+/** 簡易パーサ：key: value・key: [a, b]・- item・2段のネスト（key: の下に字下げした key: value か - item）。 */
+function parseMeta(front) {
+  const meta = {};
+  let i = 0;
+  const lines = front.slice();
+  const valueOf = (rest) => yScalar(/ #/.test(rest) && !/^\s*["']/.test(rest) ? rest.split(" #")[0] : rest);
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim() || line.trim().startsWith("#") || indentOf(line) > 0) { i++; continue; }
+    const m = /^([A-Za-z0-9_\-]+)\s*:(.*)$/.exec(line);
+    if (!m) { i++; continue; }
+    const key = m[1], rest = m[2];
+    i++;
+    if (rest.trim() && !rest.trim().startsWith("#")) { meta[key] = valueOf(rest); continue; }
+    // 字下げした子
+    const kids = [];
+    while (i < lines.length && (!lines[i].trim() || indentOf(lines[i]) > 0)) { if (lines[i].trim()) kids.push(lines[i]); i++; }
+    if (!kids.length) { meta[key] = null; continue; }
+    if (kids[0].trim().startsWith("- ")) {
+      const arr = [];
+      const base = indentOf(kids[0]);
+      for (const k of kids) {
+        const t = k.trim();
+        if (indentOf(k) === base && t.startsWith("- ")) {
+          const body = t.slice(2);
+          const mm = /^([A-Za-z0-9_\-]+)\s*:(.*)$/.exec(body);
+          if (mm) { const o = {}; o[mm[1]] = valueOf(mm[2]); arr.push(o); } else arr.push(yScalar(body));
+        } else if (arr.length && typeof arr[arr.length - 1] === "object" && arr[arr.length - 1] !== null) {
+          const mm = /^([A-Za-z0-9_\-]+)\s*:(.*)$/.exec(t);
+          if (mm) arr[arr.length - 1][mm[1]] = valueOf(mm[2]);
+        }
+      }
+      meta[key] = arr;
+    } else {
+      const obj = {};
+      const base = indentOf(kids[0]);
+      let lastKey = null;
+      for (const k of kids) {
+        const t = k.trim();
+        if (indentOf(k) === base) {
+          const mm = /^([A-Za-z0-9_\-]+)\s*:(.*)$/.exec(t);
+          if (mm) { lastKey = mm[1]; obj[lastKey] = mm[2].trim() ? valueOf(mm[2]) : []; }
+        } else if (lastKey && t.startsWith("- ")) {
+          if (!Array.isArray(obj[lastKey])) obj[lastKey] = [];
+          obj[lastKey].push(yScalar(t.slice(2)));
+        }
+      }
+      meta[key] = obj;
+    }
+  }
+  return meta;
+}
+function asList(v) {
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.map(x => String(x == null ? "" : x).trim()).filter(Boolean);
+  return String(v).replace(/^\[|\]$/g, "").split(",").map(s => s.trim()).filter(Boolean);
+}
+function yQuote(s) { return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
+function normBody(s) {
+  return String(s || "").replace(/\r\n?/g, "\n").split("\n").map(l => l.replace(/[ \t　]+$/, "")).join("\n")
+    .replace(/\n{3,}/g, "\n\n").trim();
+}
+/** title 行の値と本文だけを差し替える。ほかのフロントマターの行は一字も変えない。 */
+function rebuildArticle(parsed, origTitle, newTitle, newBody) {
+  const front = parsed.front.slice();
+  if (newTitle !== origTitle) {
+    const idx = front.findIndex(l => /^title\s*:/.test(l));
+    if (idx >= 0) front[idx] = "title: " + yQuote(newTitle);
+    else front.unshift("title: " + yQuote(newTitle));
+  }
+  return [parsed.lines[0], ...front, parsed.lines[parsed.end]].join("\n") + "\n" + normBody(newBody) + "\n";
+}
+function countChars(body, kind) {
+  const paras = normBody(body).split(/\n\s*\n/).filter(p => p.trim());
+  const use = kind === "blog" ? paras.filter(p => !p.trimStart().startsWith("#")) : paras;
+  return {chars: use.reduce((n, p) => n + p.replace(/\s/g, "").length, 0), paras: paras.length};
+}
+function xLen(text) {
+  let n = 0;
+  for (const ch of String(text || "").replace(/\r\n?/g, "\n").trim()) {
+    const o = ch.codePointAt(0);
+    n += ((o >= 0x1100 && o <= 0x115F) || (o >= 0x2E80 && o <= 0xA4CF) || (o >= 0xAC00 && o <= 0xD7A3) || (o >= 0xF900 && o <= 0xFAFF)
+      || (o >= 0xFE30 && o <= 0xFE4F) || (o >= 0xFF00 && o <= 0xFF60) || (o >= 0xFFE0 && o <= 0xFFE6) || (o >= 0x20000 && o <= 0x3FFFD)) ? 2 : 1;
+  }
+  return n;
+}
+function xProblems(text, allowUrl) {
+  const t = String(text || "").replace(/\r\n?/g, "\n").trim();
+  const p = [];
+  const n = xLen(t);
+  if (!t) p.push("本文が空");
+  if (n > X_LIMIT) p.push(`長すぎる（全角換算 ${Math.ceil(n / 2)}/140）`);
+  if (!allowUrl && /https?:\/\/|www\./.test(t)) p.push("本文に URL がある（リンクは先頭リプライに置く）");
+  if (!allowUrl && t.includes("{{")) p.push("{{BLOG_URL}} などの置換前の印が残っている");
+  if (/(^|\s)#\S/.test(t)) p.push("ハッシュタグが入っている（予告編は0個が既定）");
+  return {n, probs: p};
+}
+function fillUrl(text, url) { return url ? String(text || "").replace(/\{\{BLOG_URL(?::[^}]*)?\}\}/g, url) : String(text || ""); }
+function amebloParts(text) {
+  text = String(text || "").replace(/\r\n?/g, "\n");
+  let head = "", body = text.trim();
+  if (text.includes("===BODY===")) { const i = text.indexOf("===BODY==="); head = text.slice(0, i).trim(); body = text.slice(i + 10).trim(); }
+  let title = "", tags = "", first = "";
+  for (const line of head.split("\n")) {
+    const s = line.trim(); if (!s) continue;
+    let m = /^hashtags?\s*:\s*(.*)$/i.exec(s); if (m) { tags = m[1].trim(); continue; }
+    m = /^title\s*:\s*(.*)$/i.exec(s); if (m) { title = m[1].trim(); continue; }
+    if (!first) first = s;
+  }
+  return {title: title || first, tags, body};
+}
+
+/* ============================================================ 要求（dispatch） */
+function jstNow() { return new Date(Date.now() + 9 * 3600 * 1000); }
+function pad(n) { return String(n).padStart(2, "0"); }
+function newReq() {
+  const d = jstNow();
+  const r = Array.from(crypto.getRandomValues(new Uint8Array(2))).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}-${r}`;
+}
+let branchReady = false;
+async function ensureBranch() {
+  if (branchReady) return;
+  try {
+    await gh(`/repos/${repo()}/git/ref/heads/${BRANCH}`);
+  } catch (e) {
+    if (e.status !== 404) throw e;
+    const main = await gh(`/repos/${repo()}/git/ref/heads/main`);
+    try {
+      await gh(`/repos/${repo()}/git/refs`, {method: "POST", body: {ref: "refs/heads/" + BRANCH, sha: main.object.sha}});
+    } catch (e2) { if (e2.status !== 422) throw e2; }
+  }
+  branchReady = true;
+}
+async function putInbox(req, text) {
+  await ensureBranch();
+  await gh(`/repos/${repo()}/contents/inbox/${encodeURIComponent(req)}.txt`, {method: "PUT", body: {
+    message: `schoolpost app inbox ${req}`, branch: BRANCH,
+    content: b64utf8(text.endsWith("\n") ? text : text + "\n"),
+  }});
+}
+
+/* 履歴（最新50件。kpipe のアプリとは別に持つ） */
+let hist = store.get("history", []);
+function saveHist() {
+  hist = hist.slice(0, 50);
+  if (!store.set("history", hist)) {
+    hist.forEach((h, i) => { if (i > 10) delete h.jsonData; });
+    store.set("history", hist);
+  }
+  renderBadge();
+}
+function findHist(req) { return hist.find(h => h.req === req); }
+
+/** クラウドで許される引数か（kpipe/remote.py の check_argv と同じ判定） */
+function argvProblem(argv) {
+  const opt = (name) => { const i = argv.indexOf(name); return i >= 0 && i + 1 < argv.length ? argv[i + 1] : null; };
+  if (argv[0] === "writer") return "";
+  if (argv[0] !== "schoolpost") return "この操作は使えません：" + argv[0];
+  const sub = argv[1] || "";
+  if (!SCHOOLPOST_OK.includes(sub)) return `schoolpost ${sub} はスマホからは使えません（PC で）`;
+  if ((sub === "post" || sub === "delete-drafts") && opt("--kind") !== "blog") {
+    const only = String(opt("--only") || "").split(",").map(s => s.trim()).filter(Boolean);
+    if (!only.length || only.some(x => x !== "wp")) return "スクール記事のクラウド投稿は WordPress だけです。note と DMM は PC の schoolpost で。";
+  }
+  return "";
+}
+
+/**
+ * Actions で動かす。spec: {label, argv, input?, after?, ctx?, confirm?}
+ */
+async function runRemote(spec) {
+  if (!token()) { toast("先に「設定」でトークンを貼ってください"); showTab("settings"); return null; }
+  const argv = spec.argv.map(String);
+  const bad = argvProblem(argv);
+  if (bad) { alert(bad); return null; }
+  if (spec.confirm && !confirm(spec.confirm)) return null;
+  if (hist.filter(isActive).length >= 2 && !confirm("すでに2件以上が動いているか、順番を待っています。\nGitHub の決まりで、待ちに置けるのは1件だけです。今頼むと、待っている要求が取り消されることがあります。\n\nそれでも頼みますか？")) return null;
+  const req = newReq();
+  const entry = {
+    req, label: spec.label, argv, hasInput: spec.input != null, after: spec.after || "", ctx: spec.ctx || {},
+    created: Date.now(), state: "sending", runStatus: "", runUrl: "", result: null, applied: false, misses: 0,
+  };
+  hist.unshift(entry); saveHist(); renderStatusList();
+  try {
+    if (spec.input != null) await putInbox(req, spec.input);
+    await gh(`/repos/${repo()}/actions/workflows/${WORKFLOW}/dispatches`, {method: "POST", body: {
+      ref: "main",
+      inputs: {req, label: spec.label, argv: JSON.stringify(argv), preview: "[]", motion: ""},
+    }});
+    entry.state = "sent";
+    toast(`「${spec.label}」を頼みました。結果は「状況」で見られます（1〜2分で動き出します）`, 4500);
+  } catch (e) {
+    entry.state = "error";
+    entry.error = e.status === 404 && spec.input == null ? "workflow kpipe-remote.yml が見つかりません（main にまだ無いか、トークンの権限不足）。" + e.message : e.message;
+    toast("頼めませんでした：" + entry.error, 6000);
+  }
+  saveHist(); renderStatusList(); updateActiveInfo();
+  if (entry.state === "sent") schedulePoll(15000);
+  return entry;
+}
+
+/* ============================================================ 進み具合の追跡 */
+let pollTimer = null, polling = false;
+function isActive(h) { return h.state === "sent" || h.state === "running"; }
+function schedulePoll(ms) { clearTimeout(pollTimer); pollTimer = setTimeout(pollOnce, ms == null ? 10000 : ms); }
+async function pollOnce() {
+  if (polling) return;
+  const active = hist.filter(h => h.state === "sent" || h.state === "running");
+  if (!active.length || !token()) { updateActiveInfo(); return; }
+  if (document.visibilityState === "hidden") { schedulePoll(10000); return; }
+  polling = true;
+  try {
+    let runs = [];
+    try {
+      const r = await gh(`/repos/${repo()}/actions/workflows/${WORKFLOW}/runs?per_page=20`);
+      runs = (r && r.workflow_runs) || [];
+    } catch (e) { /* 一覧が取れなくても結果ファイルは見る */ }
+    for (const h of active) {
+      const run = runs.find(x => String(x.display_title || x.name || "").includes(h.req));
+      if (run) {
+        h.runStatus = run.status; h.runConclusion = run.conclusion || ""; h.runUrl = run.html_url;
+        if (run.status !== "completed") h.state = "running";
+      }
+      let res = null;
+      try {
+        const t = await gh(`/repos/${repo()}/contents/results/${encodeURIComponent(h.req)}.json?ref=${BRANCH}`, {raw: true});
+        res = JSON.parse(t);
+      } catch (e) { res = null; }
+      if (res) {
+        finishWith(h, res);
+      } else if (run && run.status === "completed") {
+        h.misses = (h.misses || 0) + 1;
+        if (h.misses >= 4) {
+          h.state = "done";
+          h.result = {rc: -1, ok: false, message: `Actions は「${conclusionJa(run.conclusion)}」で終わりましたが、結果ファイルがありません。Actions の画面で確かめてください。`};
+        }
+      } else if (Date.now() - h.created > 6 * 3600 * 1000) {
+        h.state = "done";
+        h.result = {rc: -1, ok: false, message: "6時間たっても結果が来ないので、追うのをやめました。Actions の画面で確かめてください。"};
+      }
+    }
+    saveHist();
+  } finally {
+    polling = false;
+  }
+  renderStatusList(); updateActiveInfo(); renderWrite();
+  if (curDetail) renderDetail(curDetail, true);
+  if (hist.some(h => h.state === "sent" || h.state === "running")) schedulePoll(10000);
+}
+function conclusionJa(c) {
+  return {success: "成功", failure: "失敗", cancelled: "取り消し", timed_out: "時間切れ", skipped: "飛ばし", startup_failure: "起動失敗"}[c] || (c || "不明");
+}
+const fullResults = new Map();
+function finishWith(h, res) {
+  fullResults.set(h.req, res);
+  h.state = "done";
+  h.result = {rc: res.rc, ok: !!res.ok, message: res.message || "", commit: res.commit || null, run_url: res.run_url || "",
+              finished: res.finished || "", tail: String(res.output || "").slice(-1500)};
+  if (res.run_url && !h.runUrl) h.runUrl = res.run_url;
+  if (res.json != null) { try { const s = JSON.stringify(res.json); if (s.length < 60000) h.jsonData = res.json; } catch (e) {} }
+  if (res.commit) cacheClear();   // main が変わった
+  if (!h.applied) {
+    h.applied = true;
+    try { applyAfter(h, res); } catch (e) { console.error(e); }
+  }
+  toast(`${res.ok ? "終わりました" : "止まりました"}：${h.label}`, 4000);
+}
+async function fetchResult(h) {
+  if (fullResults.has(h.req)) return fullResults.get(h.req);
+  const t = await gh(`/repos/${repo()}/contents/results/${encodeURIComponent(h.req)}.json?ref=${BRANCH}`, {raw: true});
+  const res = JSON.parse(t);
+  fullResults.set(h.req, res);
+  return res;
+}
+function updateActiveInfo() {
+  const n = hist.filter(isActive).length;
+  $("activeInfo").textContent = n ? `動いている要求 ${n} 件` : "";
+  renderBadge();
+}
+function renderBadge() {
+  const n = hist.filter(isActive).length;
+  const b = $("navBadge");
+  b.textContent = n; b.classList.toggle("hidden", !n);
+}
+
+/* ============================================================ 結果が来たときの後始末 */
+function applyAfter(h, res) {
+  const c = h.ctx || {};
+  if (h.after === "writer") {
+    listMeta.school = null; listMeta.blog = null;
+    if (res.ok && res.json && res.json.job) toast(`原稿が書き上がりました：${res.json.title || res.json.job}`, 6000);
+    renderWrite();
+    return;
+  }
+  if (h.after === "doc" && c.kind && c.job) {
+    listMeta[c.kind] = null;
+    const d = doc[c.kind];
+    if (c.op === "check") showCheck(c.kind, c.job, res);
+    if (!d || d.job !== c.job) return;
+    if (dirty(c.kind)) {
+      reloadResult(c.kind).then(() => toast("結果を読み直しました（欄の直しはそのまま残しています）", 4000));
+      if (c.op === "eyecatch") loadImage(c.kind, c.job, true);
+    } else {
+      loadDoc(c.kind, c.job, true).then(() => {
+        if (c.op === "blogurl" && res.ok) askReplyAfterUrl(c.job);
+      });
+    }
+  }
+}
+function showCheck(kind, job, res) {
+  const box = $(KIND[kind].p + "CheckOut"); if (!box) return;
+  if (!doc[kind] || doc[kind].job !== job) return;
+  const lines = String(res.output || "").split("\n").filter(l => /^(NG|OK): /.test(l));
+  const ng = lines.filter(l => l.startsWith("NG"));
+  box.innerHTML = `<div class="banner ${ng.length ? "ng" : "ok"}">${ng.length ? "点検：要確認" : "点検：問題なし"}</div>`
+    + `<pre>${esc((lines.length ? lines : [res.message || ""]).join("\n").replace(/^NG: /gm, "・").replace(/^OK: /gm, ""))}</pre>`;
+}
+
+/* ============================================================ 画面の切り替え */
+function showTab(name) {
+  document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + name));
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  store.set("tab", name);
+  window.scrollTo(0, 0);
+  if (name === "status") { if (!curDetail) renderStatusList(); pollOnce(); }
+  if ((name === "school" || name === "blog") && !doc[name] && !listMeta[name]) loadList(name);
+  if (name === "write") renderWrite();
+}
+document.querySelectorAll("#nav button").forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.tab === "status") { curDetail = null; $("stDetailView").classList.add("hidden"); $("stListView").classList.remove("hidden"); }
+  showTab(b.dataset.tab);
+}));
+// 端末の「戻る」で詳細から一覧へ
+window.addEventListener("popstate", () => {
+  const on = (store.get("tab", "write"));
+  if ((on === "school" || on === "blog") && doc[on]) { if (!closeDoc(on)) history.pushState({v: on}, ""); return; }
+  if (on === "status" && curDetail) { curDetail = null; $("stDetailView").classList.add("hidden"); $("stListView").classList.remove("hidden"); renderStatusList(); }
+});
+
+/* ============================================================ 書く */
+function wrKind() { return document.querySelector('input[name="wrKind"]:checked').value; }
+function wrSyncChars(reset) {
+  const k = wrKind();
+  if (reset || !$("wrChars").value) $("wrChars").value = KIND[k].chars;
+  $("wrCharsNote").textContent = `${KIND[k].label}の既定は ${KIND[k].chars.toLocaleString()} 字（目安の幅 ${KIND[k].range} 字）。`;
+}
+document.querySelectorAll('input[name="wrKind"]').forEach(r => r.addEventListener("change", () => { store.set("wrKind", wrKind()); wrSyncChars(true); }));
+$("wrBrief").addEventListener("input", () => {
+  store.set("wrDraft", $("wrBrief").value);
+  $("wrBriefCount").textContent = $("wrBrief").value.trim() ? `${$("wrBrief").value.replace(/\s/g, "").length} 字` : "";
+});
+$("wrGo").addEventListener("click", async () => {
+  const kind = wrKind();
+  const brief = $("wrBrief").value.trim();
+  if (brief.replace(/\s/g, "").length < 10) { alert("概要が短すぎます（10字以上）。主題・伝えたいこと・実際にあった体験や質問の要旨を書いてください。"); return; }
+  const chars = parseInt($("wrChars").value, 10);
+  if ($("wrChars").value && (!chars || chars < 1000 || chars > 6000)) { alert("字数の目安は 1,000〜6,000 の数で入れてください。"); return; }
+  const argv = ["writer", "--kind", kind, "--brief-file", "{INPUT}"];
+  if (chars && chars !== KIND[kind].chars) argv.push("--chars", String(chars));
+  const e = await runRemote({label: `${KIND[kind].label}を書く`, argv, input: brief, after: "writer",
+    ctx: {kind, brief: brief.slice(0, 400), chars: chars || KIND[kind].chars},
+    confirm: `${KIND[kind].label}の原稿を書いてもらいます（目安 ${(chars || KIND[kind].chars).toLocaleString()} 字・5〜15分）。\n書いた原稿は ${KIND[kind].dir} に置かれ、投稿はしません。よろしいですか？`});
+  if (e && e.state === "sent") {
+    store.set("wrLastBrief", brief);
+    $("wrBrief").value = ""; store.del("wrDraft"); $("wrBriefCount").textContent = "";
+    $("wrRestore").classList.remove("hidden");
+    store.set("wrShow", e.req);
+    renderWrite();
+  }
+});
+$("wrRestore").addEventListener("click", () => {
+  const t = store.get("wrLastBrief", "");
+  if (!t) return;
+  if ($("wrBrief").value.trim() && !confirm("欄の文字を、前に送った概要で置き換えますか？")) return;
+  $("wrBrief").value = t; store.set("wrDraft", t);
+  $("wrBriefCount").textContent = `${t.replace(/\s/g, "").length} 字`;
+});
+function writerEntries() { return hist.filter(h => h.argv && h.argv[0] === "writer"); }
+function gateNg(js) {
+  const out = [];
+  const g = js.gate || {};
+  const name = {school: "スクール本文", blogger: "Blogger 本文", x: "X 本文", ameblo: "アメブロ版", terms_ng: "WordPress の分類", labels_ng: "ラベル"};
+  for (const k of Object.keys(g)) {
+    const v = g[k];
+    if (Array.isArray(v)) { if (v.length) out.push({k: name[k] || k, ng: v}); }
+    else if (v && typeof v === "object" && v.ok === false) out.push({k: name[k] || k, ng: (v.ng && v.ng.length) ? v.ng : ["NG（詳細なし）"]});
+  }
+  return out;
+}
+function writerHtml(js, h) {
+  if (!js || typeof js !== "object") return "";
+  const kind = js.kind === "blog" ? "blog" : "school";
+  const ng = gateNg(js);
+  const bad = (Array.isArray(js.self_check) ? js.self_check : []).filter(x => x && x.ok === false);
+  const need = ng.length || bad.length;
+  let html = need
+    ? `<div class="banner ng">要確認：${ng.length ? "機械点検に NG が残っています" : ""}${ng.length && bad.length ? "／" : ""}${bad.length ? "自己点検で不合格の項目があります" : ""}</div>`
+    : `<div class="banner ok">点検はすべて通りました（最後は目で確かめてください）</div>`;
+  html += `<h3>${esc(js.title || "（タイトルなし）")}</h3><div class="kv">
+    <div>種類</div><div>${esc(KIND[kind].label)}</div>
+    <div>job</div><div>${esc(js.job || "")}</div>
+    <div>字数</div><div>${esc(js.chars != null ? Number(js.chars).toLocaleString() + " 字" : "")}</div>`;
+  if (kind === "school") {
+    html += `<div>カテゴリー</div><div>${esc(asList(js.wp_categories).join("、") || "—")}</div>
+      <div>タグ</div><div>${esc(asList(js.wp_tags).join("、") || "—")}</div>
+      <div>DMM トピック</div><div>${esc(js.dmm_topic || "—")}</div>`;
+  } else {
+    html += `<div>ラベル</div><div>${esc(asList(js.labels).join("、") || "—")}</div>
+      <div>パーマリンク</div><div>${esc(js.permalink || "—")}</div>`;
+  }
+  html += `</div>`;
+  const cands = asList(js.title_candidates);
+  if (cands.length) html += `<label class="f">タイトルの候補</label><ul style="margin:0;padding-left:1.3em">${cands.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`;
+  if (Array.isArray(js.headings) && js.headings.length) html += `<label class="f">見出し</label><ol style="margin:0;padding-left:1.4em">${js.headings.map(c => `<li>${esc(c)}</li>`).join("")}</ol>`;
+  if (js.search_description) html += `<label class="f">検索向け説明</label><div class="textview">${esc(js.search_description)}</div>`;
+  if (js.head) html += `<label class="f">冒頭</label><div class="textview">${esc(js.head)}…</div>`;
+  if (js.x) html += `<label class="f">X 本文</label><div class="textview">${esc(js.x)}</div>`;
+  html += `<label class="f">機械点検</label>`;
+  const gkeys = Object.keys(js.gate || {});
+  if (!gkeys.length) html += `<p class="muted">（結果なし）</p>`;
+  else html += `<ul class="checks">${gkeys.map(k => {
+    const v = js.gate[k];
+    const label = {school: "スクール本文", blogger: "Blogger 本文", x: "X 本文", ameblo: "アメブロ版", terms_ng: "WordPress の分類", labels_ng: "ラベル"}[k] || k;
+    const list = Array.isArray(v) ? v : (v && v.ng) || [];
+    const ok = Array.isArray(v) ? !v.length : !!(v && v.ok);
+    return `<li><span class="${ok ? "okc" : "err"}">${ok ? "○" : "×"}</span> ${esc(label)}${ok ? "" : `<div class="muted">${list.map(esc).join("<br>")}</div>`}</li>`;
+  }).join("")}</ul>`;
+  if (Array.isArray(js.self_check) && js.self_check.length) {
+    html += `<label class="f">自己点検（書き手の申告。最終判断はご本人）</label><ul class="checks">${js.self_check.map(x => `<li><span class="${x.ok ? "okc" : "err"}">${x.ok ? "○" : "×"}</span> ${esc(x.item || "")}${x.note ? `<div class="muted">${esc(x.note)}</div>` : ""}</li>`).join("")}</ul>`;
+  }
+  if (js.cost) html += `<p class="note">費用：${esc(js.cost)}</p>`;
+  if (js.job) html += `<button class="pri" data-open-kind="${kind}" data-open-job="${esc(js.job)}" style="width:100%;margin-top:8px">この原稿を開く</button>`;
+  return html;
+}
+function renderWrite() {
+  const list = writerEntries();
+  const want = store.get("wrShow", "");
+  const h = list.find(x => x.req === want) || list[0];
+  const box = $("wrResult");
+  if (!h) { box.innerHTML = `<p class="muted">書き上がると、ここに要約が出ます。</p>`; }
+  else if (isActive(h)) {
+    const min = Math.floor((Date.now() - h.created) / 60000);
+    box.innerHTML = `<h3>${stateTag(h)} ${esc(h.label)}</h3><p>書いています…（頼んでから ${min} 分。5〜15分かかります）</p>
+      ${h.ctx && h.ctx.brief ? `<label class="f">概要</label><div class="textview">${esc(h.ctx.brief)}</div>` : ""}
+      <button class="small" data-st="${esc(h.req)}" style="width:100%">状況の画面で見る</button>`;
+  } else if (h.state === "error") {
+    box.innerHTML = `<h3>${stateTag(h)} ${esc(h.label)}</h3><p class="err">${esc(h.error || "")}</p>`;
+  } else if (h.result && h.result.ok && h.jsonData) {
+    box.innerHTML = writerHtml(h.jsonData, h);
+  } else {
+    box.innerHTML = `<h3>${stateTag(h)} ${esc(h.label)}</h3><p class="err">${esc((h.result && h.result.message) || "書けませんでした")}</p>
+      <pre>${esc(((h.result && h.result.tail) || "").slice(-800))}</pre>
+      <button class="small" data-st="${esc(h.req)}" style="width:100%">状況の画面で詳しく見る</button>`;
+  }
+  $("wrPast").innerHTML = list.length ? list.slice(0, 20).map(x => `<div class="item" data-wr="${esc(x.req)}" role="button" tabindex="0" style="cursor:pointer">
+      <div class="t">${stateTag(x)} ${esc((x.jsonData && x.jsonData.title) || x.label)}</div>
+      <div class="meta">${fmtTime(x.created)}｜${esc((x.jsonData && x.jsonData.job) || x.req)}</div></div>`).join("")
+    : `<p class="muted">まだありません。</p>`;
+  $("wrRestore").classList.toggle("hidden", !store.get("wrLastBrief", ""));
+}
+$("wrPast").addEventListener("click", (ev) => {
+  const it = ev.target.closest("[data-wr]"); if (!it) return;
+  store.set("wrShow", it.dataset.wr); renderWrite(); window.scrollTo({top: 0, behavior: "smooth"});
+});
+document.addEventListener("click", (ev) => {
+  const o = ev.target.closest("[data-open-job]");
+  if (o) { openDoc(o.dataset.openKind, o.dataset.openJob); return; }
+  const s = ev.target.closest("[data-st]");
+  if (s) openDetail(s.dataset.st);
+});
+
+/* ============================================================ 原稿の一覧 */
+const listMeta = {school: null, blog: null};   // {names, info: {job: {title, status}}, shown}
+const PAGE = 20;
+function statusOf(kind, r) {
+  r = r || {};
+  const media = KIND[kind].media;
+  const done = media.filter(m => (r[m] || {}).id);
+  if (!done.length) return {t: "未投稿", c: ""};
+  if (kind === "blog") return r.published_url ? {t: "公開済み", c: "ok"} : {t: "下書き済み", c: "run"};
+  if (done.length === media.length) return {t: "投稿済み", c: "ok"};
+  return {t: "一部（" + done.map(m => MEDIA_LABEL[m]).join("・") + "）", c: "run"};
+}
+async function loadList(kind, force) {
+  if (!token()) { $(KIND[kind].p + "Count").textContent = "先に「設定」でトークンを貼ってください。"; return; }
+  const p = KIND[kind].p;
+  if (force) { cacheClear(KIND[kind].dir); listMeta[kind] = null; }
+  $(p + "Count").textContent = "一覧を読み込み中…";
+  try {
+    const items = await listDir(KIND[kind].dir);
+    const names = items.filter(x => x.type === "dir").map(x => x.name).sort().reverse();
+    listMeta[kind] = {names, info: {}, shown: 0};
+    await listMore(kind);
+  } catch (e) { $(p + "Count").textContent = "読めませんでした：" + e.message; }
+}
+async function listMore(kind) {
+  const L = listMeta[kind]; if (!L) return;
+  const p = KIND[kind].p;
+  const next = L.names.slice(L.shown, L.shown + PAGE);
+  $(p + "Count").textContent = `${L.names.length}件。読み込み中…`;
+  await pool(next, 6, async (job) => {
+    const d = `${KIND[kind].dir}/${job}`;
+    const [art, res] = await Promise.all([readTextOr(d + "/article.md", null), readJsonOr(d + "/result.json", {})]);
+    let title = "";
+    try { if (art != null) title = String(parseMeta(splitFront(art).front).title || ""); } catch (e) { title = ""; }
+    L.info[job] = {title, has: art != null, st: statusOf(kind, res)};
+  });
+  L.shown += next.length;
+  renderList(kind);
+}
+function jobDate(job) { const m = /^(\d{4})(\d{2})(\d{2})/.exec(job); return m ? `${Number(m[2])}/${Number(m[3])}` : ""; }
+function renderList(kind) {
+  const L = listMeta[kind]; const p = KIND[kind].p;
+  if (!L) return;
+  $(p + "Count").textContent = `${L.names.length}件（新しい順）`;
+  $(p + "List").innerHTML = L.names.length ? L.names.slice(0, L.shown).map(job => {
+    const i = L.info[job] || {};
+    return `<div class="item" data-job="${esc(job)}" role="button" tabindex="0" style="cursor:pointer">
+      <div class="t">${esc(i.title || (i.has === false ? "（article.md がありません）" : "（タイトルなし）"))}</div>
+      <div class="meta">${i.st ? `<span class="tag ${i.st.c}">${esc(i.st.t)}</span>` : ""}${esc(jobDate(job))}｜${esc(job)}</div></div>`;
+  }).join("") : `<p class="muted">原稿がありません。</p>`;
+  $(p + "More").classList.toggle("hidden", L.shown >= L.names.length);
+}
+for (const kind of ["school", "blog"]) {
+  const p = KIND[kind].p;
+  $(p + "Refresh").addEventListener("click", () => loadList(kind, true));
+  $(p + "More").addEventListener("click", () => listMore(kind));
+  $(p + "List").addEventListener("click", (ev) => { const it = ev.target.closest("[data-job]"); if (it) openDoc(kind, it.dataset.job); });
+  $(p + "Back").addEventListener("click", () => { if (history.state && history.state.v === kind) history.back(); else closeDoc(kind); });
+}
+
+/* ============================================================ 原稿の詳細 */
+const doc = {school: null, blog: null};
+const imgUrl = {school: "", blog: ""};
+/** 欄の一覧。group ごとに保存する（article＝article.md、x＝x.txt と x_reply.txt、ameblo＝ameblo.txt） */
+function fieldsOf(kind) {
+  const p = KIND[kind].p;
+  const f = [
+    {k: "title", el: $(p + "Title"), g: "article", norm: s => s.trim()},
+    {k: "body", el: $(p + "Body"), g: "article", norm: normBody},
+  ];
+  if (kind === "blog") f.push(
+    {k: "x", el: $("blX"), g: "x", norm: s => s.replace(/\r\n?/g, "\n").trim()},
+    {k: "xr", el: $("blXr"), g: "x", norm: s => s.replace(/\r\n?/g, "\n").trim()},
+    {k: "ameblo", el: $("blAm"), g: "ameblo", norm: s => s.replace(/\r\n?/g, "\n").trim()},
+  );
+  return f;
+}
+function dirtyGroups(kind) {
+  const d = doc[kind]; if (!d) return [];
+  const g = new Set();
+  for (const f of fieldsOf(kind)) if (f.norm(f.el.value) !== f.norm(d.saved[f.k] || "")) g.add(f.g);
+  return Array.from(g);
+}
+function dirty(kind) { return dirtyGroups(kind).length > 0; }
+function markDirty(kind) {
+  const g = dirtyGroups(kind);
+  if (kind === "school") $("scDirty").textContent = g.length ? "● 保存していない直しがあります" : "";
+  else {
+    $("blDirtyArt").textContent = g.includes("article") ? "● 本文・タイトルに保存していない直しがあります" : "";
+    $("blDirtyX").textContent = g.includes("x") ? "● X の文に保存していない直しがあります" : "";
+    $("blDirtyAm").textContent = g.includes("ameblo") ? "● アメブロ版に保存していない直しがあります" : "";
+  }
+}
+function updateCounts(kind) {
+  const p = KIND[kind].p;
+  const c = countChars($(p + "Body").value, kind);
+  let s = `${c.chars.toLocaleString()} 字・${c.paras} 段落（目安 ${KIND[kind].range} 字）`;
+  if (kind === "school") {
+    const bad = normBody($(p + "Body").value).split("\n").filter(l => /。[^\n」』）】]/.test(l)).length;
+    if (bad) s += `　<span class="warn">句点のあとで改行していない行が ${bad} か所</span>`;
+  } else {
+    const t = $("blTitle").value.trim().length;
+    if (t > 32) s += `　<span class="warn">タイトルが ${t} 字（32字まで）</span>`;
+    if (/\*\*[^*\n]+\*\*/.test($(p + "Body").value)) s += `　<span class="warn">**太字** が残っています</span>`;
+  }
+  $(p + "BodyCount").innerHTML = s;
+  if (kind === "blog") {
+    const x = xProblems($("blX").value, false);
+    const over = x.n > X_LIMIT;
+    $("blXCount").innerHTML = `<span class="${over ? "err" : ""}">全角換算 ${Math.ceil(x.n / 2)}/140 字</span>（X換算 ${x.n}/${X_LIMIT}）`
+      + (x.probs.length ? `<div class="${over ? "err" : "warn"}">${x.probs.map(esc).join("<br>")}</div>` : "");
+  }
+}
+for (const kind of ["school", "blog"]) {
+  for (const f of fieldsOf(kind)) f.el.addEventListener("input", () => { markDirty(kind); updateCounts(kind); });
+}
+window.addEventListener("beforeunload", (e) => { if (dirty("school") || dirty("blog")) { e.preventDefault(); e.returnValue = ""; } });
+
+async function openDoc(kind, job) {
+  if (doc[kind] && doc[kind].job !== job && dirty(kind) && !confirm("開いている原稿に保存していない直しがあります。捨てて別の原稿を開きますか？")) return;
+  showTab(kind);
+  $(KIND[kind].p + "ListView").classList.add("hidden");
+  $(KIND[kind].p + "DetailView").classList.remove("hidden");
+  if (!(history.state && history.state.v === kind)) history.pushState({v: kind}, "");
+  await loadDoc(kind, job, false);
+}
+function closeDoc(kind) {
+  if (dirty(kind) && !confirm("保存していない直しがあります。捨てて一覧へ戻りますか？")) return false;
+  doc[kind] = null;
+  if (imgUrl[kind]) { URL.revokeObjectURL(imgUrl[kind]); imgUrl[kind] = ""; }
+  $(KIND[kind].p + "DetailView").classList.add("hidden");
+  $(KIND[kind].p + "ListView").classList.remove("hidden");
+  $(KIND[kind].p + "CheckOut") && ($(KIND[kind].p + "CheckOut").innerHTML = "");
+  if (!listMeta[kind]) loadList(kind); else renderList(kind);
+  return true;
+}
+async function loadDoc(kind, job, quiet) {
+  const p = KIND[kind].p;
+  const dir = `${KIND[kind].dir}/${job}`;
+  cacheClear(dir + "/");
+  if (!quiet) {
+    $(p + "Job").textContent = `${job}　読み込み中…`;
+    $(p + "Info").innerHTML = "";
+  }
+  try {
+    const names = (await listDir(dir)).map(x => x.name);
+    const want = kind === "school" ? ["article.md"] : ["article.md", "x.txt", "x_reply.txt", "ameblo.txt"];
+    const got = {};
+    await Promise.all(want.map(async f => { got[f] = names.includes(f) ? await readFileOr(dir + "/" + f) : null; }));
+    if (!got["article.md"]) { $(p + "Job").textContent = `${job} の article.md が main にありません。`; return; }
+    const parsed = splitFront(got["article.md"].text);
+    const meta = parseMeta(parsed.front);
+    const title = String(meta.title == null ? "" : meta.title).trim();
+    const body = normBody(parsed.body);
+    const d = {job, dir, names, parsed, meta, title, sha: {}, saved: {title, body}, res: {}};
+    d.sha.article = got["article.md"].sha;
+    if (kind === "blog") {
+      d.sha.x = got["x.txt"] ? got["x.txt"].sha : null;
+      d.sha.xr = got["x_reply.txt"] ? got["x_reply.txt"].sha : null;
+      d.sha.ameblo = got["ameblo.txt"] ? got["ameblo.txt"].sha : null;
+      d.saved.x = got["x.txt"] ? got["x.txt"].text.replace(/\r\n?/g, "\n").trim() : "";
+      d.saved.xr = got["x_reply.txt"] ? got["x_reply.txt"].text.replace(/\r\n?/g, "\n").trim() : DEFAULT_X_REPLY;
+      d.saved.ameblo = got["ameblo.txt"] ? got["ameblo.txt"].text.replace(/\r\n?/g, "\n").trim() : "";
+    }
+    doc[kind] = d;
+    for (const f of fieldsOf(kind)) f.el.value = d.saved[f.k] || "";
+    $(p + "Job").textContent = job;
+    renderInfo(kind);
+    markDirty(kind); updateCounts(kind);
+    const [res, log] = await Promise.all([readJsonOr(dir + "/result.json", {}), readTextOr(dir + "/posting_log.md", "")]);
+    if (doc[kind] !== d) return;
+    d.res = res || {};
+    $(p + "Log").textContent = log || "（記録はまだありません）";
+    renderStatus(kind);
+    loadImage(kind, job, quiet);
+  } catch (e) {
+    $(p + "Job").textContent = `${job}　読めませんでした：${e.message}`;
+  }
+}
+async function reloadResult(kind) {
+  const d = doc[kind]; if (!d) return;
+  cacheClear(d.dir + "/result.json");
+  d.res = await readJsonOr(d.dir + "/result.json", {});
+  renderStatus(kind);
+}
+function renderInfo(kind) {
+  const d = doc[kind]; const p = KIND[kind].p; const m = d.meta;
+  const ec = (m.eyecatch && typeof m.eyecatch === "object") ? m.eyecatch : {};
+  let html = "";
+  if (kind === "school") {
+    html += `<div>カテゴリー</div><div>${esc(asList(m.wp_categories).join("、") || "—")}</div>
+      <div>タグ</div><div>${esc(asList(m.wp_tags).join("、") || "—")}</div>
+      <div>note タグ</div><div>${esc(asList(m.note_hashtags).map(h => "#" + h.replace(/^#/, "")).join(" ") || "—")}</div>
+      <div>DMM トピック</div><div>${esc(m.dmm_topic || "（未設定）")}</div>
+      ${m.excerpt ? `<div>抜粋</div><div>${esc(m.excerpt)}</div>` : ""}`;
+  } else {
+    html += `<div>ラベル</div><div>${esc(asList(m.labels).join("、") || "（未設定）")}</div>
+      <div>ハブ</div><div>${esc(m.hub || "none")}</div>`;
+  }
+  html += `<div>アイキャッチ</div><div>${d.names.includes("eyecatch.jpg") || d.names.includes("eyecatch.png") ? "あり" : "なし"}${ec.scene ? `<div class="muted">場面：${esc(ec.scene)}</div>` : ""}</div>`;
+  $(p + "Info").innerHTML = html;
+  const cands = asList(m.title_candidates).filter(c => c !== d.title);
+  $(p + "Cands").innerHTML = cands.length ? `<span class="muted" style="width:100%">候補（押すとタイトル欄に入ります）</span>` + cands.map(c => `<button type="button" data-cand="${esc(c)}">${esc(c)}</button>`).join("") : "";
+  if (kind === "blog") $("blSrcNote").textContent = d.names.includes("blogger.html")
+    ? "Cowork が作った blogger.html があります。本文を直して保存すると、投稿には article.md から変換した HTML を使います（blogger.html は使わなくなります）。"
+    : "投稿のときに article.md を HTML に変換して送ります。";
+}
+for (const kind of ["school", "blog"]) {
+  $(KIND[kind].p + "Cands").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-cand]"); if (!b) return;
+    $(KIND[kind].p + "Title").value = b.dataset.cand; markDirty(kind); updateCounts(kind);
+  });
+}
+function linkA(url, text) { return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text || url)}</a>` : ""; }
+function renderStatus(kind) {
+  const d = doc[kind]; const r = d.res || {};
+  let html = `<div class="kv">`;
+  for (const m of KIND[kind].media) {
+    const x = r[m] || {};
+    let v;
+    if (x.id) {
+      const u = x.edit_url || x.draft_list_url || "";
+      v = `<span class="okc">下書きあり</span>（id ${esc(x.id)}${x.status ? "・" + esc(x.status) : ""}${x.at ? "・" + esc(x.at) : ""}）` + (u ? `<br>${linkA(u, "編集画面を開く")}` : "");
+    } else if (x.deleted) v = `<span class="muted">下書きを削除済み（${esc(x.deleted)}）</span>`;
+    else v = `<span class="muted">まだ${(m === "note" || m === "dmm") ? "（PC の schoolpost で）" : ""}</span>`;
+    html += `<div>${esc(MEDIA_LABEL[m])}</div><div>${v}</div>`;
+  }
+  if (kind === "blog") {
+    html += `<div>公開 URL</div><div>${r.published_url ? linkA(r.published_url) : `<span class="muted">まだ（公開後に「Blogger から取り直す」）</span>`}</div>`;
+    for (const m of ["x", "x_reply"]) {
+      const x = r[m] || {};
+      html += `<div>${esc(MEDIA_LABEL[m])}</div><div>${x.id ? linkA(x.url, "X で開く") + (x.at ? `（${esc(x.at)}）` : "") : `<span class="muted">まだ</span>`}</div>`;
+    }
+    if (r.eyecatch_downloads) html += `<div>画像（PC）</div><div class="muted">${esc(r.eyecatch_downloads)}</div>`;
+  }
+  html += `</div>`;
+  $(KIND[kind].p + "Status").innerHTML = html;
+  if (kind === "blog") { renderCopy(); renderXStatus(); }
+}
+function renderXStatus() {
+  const r = (doc.blog && doc.blog.res) || {};
+  const x = r.x || {}, xr = r.x_reply || {};
+  $("blXStatus").innerHTML = x.id
+    ? `X 本文は投稿済み：${linkA(x.url, "開く")}` + (xr.id ? `　リンク返信：${linkA(xr.url, "開く")}` : "　リンク返信はまだ（公開後に「Blogger から取り直す」→「リンクを返信」）")
+    : "X にはまだ投稿していません。";
+}
+
+/* ---------- 手で貼るもの（コピー欄） */
+let copyVals = [];
+function renderCopy() {
+  const d = doc.blog; if (!d) return;
+  const url = (d.res && d.res.published_url) || "";
+  const am = amebloParts($("blAm").value);
+  const rows = [
+    ["パーマリンク（Blogger の「リンク」→カスタム）", String(d.meta.permalink || "").trim()],
+    ["検索向け説明", String(d.meta.search_description || "").trim()],
+    ["アメブロ タイトル", am.title || $("blTitle").value.trim()],
+    ["アメブロ ハッシュタグ", am.tags],
+    ["アメブロ 本文（HTML）", am.body ? fillUrl(am.body, url) : ""],
+    ["X 本文", $("blX").value.trim()],
+    ["先頭リプライ", fillUrl($("blXr").value.trim(), url)],
+  ];
+  copyVals = rows.map(r => r[1]);
+  const left = url ? "" : `<p class="note warn">公開 URL がまだ無いので、アメブロ本文と先頭リプライの {{BLOG_URL}} はそのままです。公開後に「Blogger から取り直す」を押すと置き換わります。</p>`;
+  $("blCopy").innerHTML = left + rows.map((r, i) => `<div class="copyrow">
+      <div class="head"><span class="muted">${esc(r[0])}</span><button class="small" data-copy="${i}"${r[1] ? "" : " disabled"}>コピー</button></div>
+      <div class="val">${r[1] ? esc(r[1]) : `<span class="muted">（ありません）</span>`}</div></div>`).join("");
+}
+$("blCopy").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-copy]"); if (!b) return;
+  const t = copyVals[Number(b.dataset.copy)] || "";
+  if (await copyText(t)) toast(`コピーしました（${t.length} 字）`, 2000); else alert("コピーできませんでした。欄を長押しして選んでください。");
+});
+["blX", "blXr", "blAm", "blTitle"].forEach(id => $(id).addEventListener("input", () => { if (doc.blog) renderCopy(); }));
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  try {
+    const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+  } catch (e) { return false; }
+}
+
+/* ---------- アイキャッチ */
+async function loadImage(kind, job, fresh) {
+  const d = doc[kind]; if (!d || d.job !== job) return;
+  const box = $(KIND[kind].p + "Img");
+  let names = d.names;
+  if (fresh) { try { cacheClear("d:" + d.dir); names = (await listDir(d.dir)).map(x => x.name); d.names = names; } catch (e) {} }
+  const fn = names.includes("eyecatch.jpg") ? "eyecatch.jpg" : names.includes("eyecatch.png") ? "eyecatch.png" : "";
+  if (!fn) { box.innerHTML = `<p class="muted">まだありません（「アイキャッチを作る」で作れます）。</p>`; return; }
+  box.innerHTML = `<p class="muted">画像を読み込み中…</p>`;
+  try {
+    const blob = await gh(`/repos/${repo()}/contents/${encPath(d.dir + "/" + fn)}?ref=main`, {blob: true});
+    if (doc[kind] !== d) return;
+    if (imgUrl[kind]) URL.revokeObjectURL(imgUrl[kind]);
+    const typed = blob.type && blob.type.startsWith("image/") ? blob : new Blob([blob], {type: fn.endsWith(".png") ? "image/png" : "image/jpeg"});
+    imgUrl[kind] = URL.createObjectURL(typed);
+    const save = `${job}_${kind === "blog" ? "ブログ" : "スクール"}_アイキャッチ.${fn.split(".").pop()}`;
+    box.innerHTML = `<img src="${imgUrl[kind]}" alt="アイキャッチ画像">
+      <a class="btn pri" href="${imgUrl[kind]}" download="${esc(save)}" style="width:100%">画像を保存</a>
+      <p class="note">端末の「ダウンロード」に ${esc(save)} として保存します。</p>`;
+  } catch (e) { box.innerHTML = `<p class="err">画像を読めませんでした：${esc(e.message)}</p>`; }
+}
+
+/* ---------- 保存 */
+async function saveGroup(kind, g) {
+  const d = doc[kind]; if (!d) return false;
+  const p = KIND[kind].p;
+  const msg = (what) => `記事投稿アプリ：${d.job} の${what}を直す（スマホから）`;
+  if (g === "article") {
+    const title = $(p + "Title").value.trim();
+    const body = $(p + "Body").value;
+    if (!title) { alert("タイトルが空です。"); return false; }
+    if (!normBody(body)) { alert("本文が空です。"); return false; }
+    const text = rebuildArticle(d.parsed, d.title, title, body);
+    d.sha.article = await putFile(d.dir + "/article.md", text, d.sha.article, msg("本文"));
+    d.parsed = splitFront(text); d.meta = parseMeta(d.parsed.front); d.title = title;
+    d.saved.title = title; d.saved.body = normBody(body);
+    $(p + "Body").value = d.saved.body;
+  } else if (g === "x") {
+    const x = $("blX").value.replace(/\r\n?/g, "\n").trim();
+    const xr = $("blXr").value.replace(/\r\n?/g, "\n").trim();
+    const n = xLen(x);
+    if (n > X_LIMIT) { alert(`X 本文が長すぎます（全角換算 ${Math.ceil(n / 2)}/140 字）。140字以内にしてから保存してください。`); return false; }
+    if (x !== d.saved.x) { d.sha.x = await putFile(d.dir + "/x.txt", x + "\n", d.sha.x, msg("X 本文")); d.saved.x = x; }
+    if (xr !== d.saved.xr) { d.sha.xr = await putFile(d.dir + "/x_reply.txt", xr + "\n", d.sha.xr, msg("先頭リプライ")); d.saved.xr = xr; }
+  } else if (g === "ameblo") {
+    const a = $("blAm").value.replace(/\r\n?/g, "\n").trim();
+    d.sha.ameblo = await putFile(d.dir + "/ameblo.txt", a + "\n", d.sha.ameblo, msg("アメブロ版"));
+    d.saved.ameblo = a;
+  }
+  return true;
+}
+async function saveGroups(kind, groups) {
+  const busy = document.querySelectorAll(`#tab-${kind} button`);
+  busy.forEach(b => b.disabled = true);
+  try {
+    for (const g of groups) if (!(await saveGroup(kind, g))) return false;
+    listMeta[kind] = null;
+    toast("保存しました（GitHub の main に反映）", 2500);
+    return true;
+  } catch (e) {
+    if (e.status === 409 || e.status === 422) alert("保存できませんでした。ほかで（PC やクラウドで）先にこのファイルが書き換えられています。\n\n欄の直しをコピーしておき、「保存前に戻す」で読み直してから、もう一度直してください。\n\n" + e.message);
+    else alert("保存できませんでした：" + e.message);
+    return false;
+  } finally {
+    busy.forEach(b => b.disabled = false);
+    markDirty(kind); updateCounts(kind); if (kind === "blog") renderCopy();
+  }
+}
+async function ensureSaved(kind) {
+  const g = dirtyGroups(kind);
+  if (!g.length) return true;
+  if (!confirm("保存していない直しがあります。先に保存してから進めます。よろしいですか？\n（キャンセルで中止）")) return false;
+  return await saveGroups(kind, g);
+}
+$("scSave").addEventListener("click", () => { if (doc.school) saveGroups("school", ["article"]); });
+$("blSaveArt").addEventListener("click", () => { if (doc.blog) saveGroups("blog", ["article"]); });
+$("blSaveX").addEventListener("click", () => { if (doc.blog) saveGroups("blog", ["x"]); });
+$("blSaveAm").addEventListener("click", () => { if (doc.blog) saveGroups("blog", ["ameblo"]); });
+for (const [kind, id] of [["school", "scRevert"], ["blog", "blRevert"]]) {
+  $(id).addEventListener("click", () => {
+    const d = doc[kind]; if (!d) return;
+    if (dirty(kind) && !confirm("直しを捨てて、GitHub に保存されている内容を読み直しますか？")) return;
+    for (const f of fieldsOf(kind)) f.el.value = "";
+    doc[kind].saved = {};   // 読み直しで dirty を気にしない
+    loadDoc(kind, d.job, false);
+  });
+}
+$("scResReload").addEventListener("click", () => reloadResult("school"));
+$("blResReload").addEventListener("click", () => reloadResult("blog"));
+
+/* ---------- 操作（Actions） */
+async function docRun(kind, op, label, argv, confirmMsg) {
+  const d = doc[kind]; if (!d) return null;
+  if (!(await ensureSaved(kind))) return null;
+  return runRemote({label: `${label}（${d.job}）`, argv, after: "doc", ctx: {kind, job: d.job, op}, confirm: confirmMsg});
+}
+$("scPostWp").addEventListener("click", () => {
+  const d = doc.school; if (!d) return;
+  if ((d.res.wp || {}).id) { alert(`WordPress には下書きがあります（id ${d.res.wp.id}）。\n投稿済みの媒体は飛ばされます。作り直すときは先に「WordPress の下書きを消す」を。`); return; }
+  docRun("school", "post", "WordPress に下書き", ["schoolpost", "post", d.job, "--kind", "school", "--only", "wp"],
+    "WordPress（spacebrothers.blog）に下書きを作ります（公開はしません）。\nアイキャッチが無ければ作ります。よろしいですか？\n\n会員保護（購読会員＋アカデミー会員）は管理画面で手で設定してください。");
+});
+$("scEye").addEventListener("click", () => {
+  const d = doc.school; if (!d) return;
+  docRun("school", "eyecatch", "アイキャッチを作る", ["schoolpost", "eyecatch", d.job, "--kind", "school"],
+    (d.names.includes("eyecatch.jpg") ? "アイキャッチはもうあります。作り直して置き換えます。\n" : "") + "画像の生成（OpenAI）の費用がかかります。よろしいですか？");
+});
+$("scCheck").addEventListener("click", () => {
+  const d = doc.school; if (!d) return;
+  $("scCheckOut").innerHTML = `<p class="muted">点検を頼みました。終わるとここに出ます。</p>`;
+  docRun("school", "check", "点検", ["schoolpost", "check", d.job, "--kind", "school"]);
+});
+$("scDelWp").addEventListener("click", () => {
+  const d = doc.school; if (!d) return;
+  if (!(d.res.wp || {}).id) { alert("WordPress の下書きはありません（消せるものがない）。"); return; }
+  docRun("school", "delete", "WordPress の下書きを消す", ["schoolpost", "delete-drafts", d.job, "--kind", "school", "--only", "wp"],
+    `WordPress の下書き（id ${d.res.wp.id}）を消します（ゴミ箱へ）。取り消せません。よろしいですか？`);
+});
+$("blPost").addEventListener("click", () => {
+  const d = doc.blog; if (!d) return;
+  if ((d.res.blogger || {}).id) { alert(`Blogger には下書きがあります（id ${d.res.blogger.id}）。\n作り直すときは先に「Blogger の下書きを消す」を。`); return; }
+  docRun("blog", "post", "Blogger に下書き", ["schoolpost", "post", d.job, "--kind", "blog"],
+    "Blogger（spacebrothers.jp）に下書きを作ります（公開はしません）。\nアイキャッチが無ければ作ります。よろしいですか？");
+});
+$("blUrl").addEventListener("click", () => {
+  const d = doc.blog; if (!d) return;
+  if (!(d.res.blogger || {}).id) { alert("先に「Blogger に下書き」をしてください（Blogger の id がまだありません）。"); return; }
+  docRun("blog", "blogurl", "Blogger から取り直す", ["schoolpost", "blog-url", d.job]);
+});
+$("blEye").addEventListener("click", () => {
+  const d = doc.blog; if (!d) return;
+  docRun("blog", "eyecatch", "アイキャッチを作る", ["schoolpost", "eyecatch", d.job, "--kind", "blog"],
+    (d.names.includes("eyecatch.jpg") ? "アイキャッチはもうあります。作り直して置き換えます。\n" : "") + "画像の生成（OpenAI）の費用がかかります。よろしいですか？");
+});
+$("blDel").addEventListener("click", () => {
+  const d = doc.blog; if (!d) return;
+  if (!(d.res.blogger || {}).id) { alert("Blogger の下書きはありません（消せるものがない）。"); return; }
+  docRun("blog", "delete", "Blogger の下書きを消す", ["schoolpost", "delete-drafts", d.job, "--kind", "blog"],
+    `Blogger の下書き（id ${d.res.blogger.id}）を消します。取り消せません。\n（公開済みの記事は消しません）よろしいですか？`);
+});
+$("blXPost").addEventListener("click", () => {
+  const d = doc.blog; if (!d) return;
+  if ((d.res.x || {}).id) { alert("X には投稿済みです：" + (d.res.x.url || d.res.x.id)); return; }
+  const text = $("blX").value.replace(/\r\n?/g, "\n").trim();
+  const x = xProblems(text, false);
+  if (x.probs.length) { alert("X の本文を直してください：\n\n" + x.probs.map(s => "・" + s).join("\n")); return; }
+  docRun("blog", "xpost", "X に本文を投稿", ["schoolpost", "x-post", d.job],
+    `この本文を X に公開します（全角換算 ${Math.ceil(x.n / 2)}/140 字）。取り消せません。よろしいですか？\n\n${text}`);
+});
+async function doReply(skipConfirm) {
+  const d = doc.blog; if (!d) return;
+  if (!(d.res.x || {}).id) { alert("先に「X に本文を投稿」してください。"); return; }
+  if ((d.res.x_reply || {}).id) { alert("リンクの返信は投稿済みです：" + (d.res.x_reply.url || "")); return; }
+  const url = (d.res.published_url || "").trim();
+  if (!url) { alert("公開 URL がまだありません。Blogger で公開してから「Blogger から取り直す」を押してください。"); return; }
+  let body = fillUrl($("blXr").value.trim(), url);
+  if (!body.includes(url)) body = (body + "\n" + url).trim();
+  docRun("blog", "xreply", "リンクを返信", ["schoolpost", "x-reply", d.job],
+    skipConfirm ? undefined : `この返信を X の本文にぶら下げます。取り消せません。よろしいですか？\n\n${body}`);
+}
+$("blXReply").addEventListener("click", () => doReply(false));
+function askReplyAfterUrl(job) {
+  const d = doc.blog; if (!d || d.job !== job) return;
+  const r = d.res;
+  if (r.published_url && (r.x || {}).id && !(r.x_reply || {}).id) {
+    let body = fillUrl($("blXr").value.trim(), r.published_url);
+    if (!body.includes(r.published_url)) body = (body + "\n" + r.published_url).trim();
+    if (confirm(`公開 URL が取れました。X の本文にリンクの返信を付けますか？取り消せません。\n\n${body}`)) doReply(true);
+  } else if (r.published_url) toast("公開 URL を取り込みました。コピー欄の {{BLOG_URL}} が置き換わりました", 4000);
+  else toast("まだ公開されていないようです（Blogger で公開してから、もう一度）", 5000);
+}
+
+/* ============================================================ 実行状況 */
+let curDetail = null;
+function stateTag(h) {
+  if (h.state === "sending") return `<span class="tag run">送信中</span>`;
+  if (h.state === "error") return `<span class="tag ng">頼めず</span>`;
+  if (h.state === "sent") return `<span class="tag run">${h.runStatus === "queued" ? "待ち" : "受付済み"}</span>`;
+  if (h.state === "running") return `<span class="tag run">${h.runStatus === "queued" ? "待ち" : h.runStatus === "completed" ? "結果待ち" : "実行中"}</span>`;
+  if (h.result && h.result.ok) {
+    const js = h.jsonData;
+    if (h.argv && h.argv[0] === "writer" && js && (gateNg(js).length || (js.self_check || []).some(x => x && x.ok === false))) return `<span class="tag ng">要確認</span>`;
+    return `<span class="tag ok">成功</span>`;
+  }
+  return `<span class="tag ng">失敗</span>`;
+}
+function fmtTime(ms) { const d = new Date(ms + 9 * 3600 * 1000); return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
+function renderStatusList() {
+  const box = $("stList");
+  if (!hist.length) { box.innerHTML = `<p class="muted">まだ何も頼んでいません。</p>`; return; }
+  box.innerHTML = hist.map(h => `<div class="item" data-req="${esc(h.req)}" role="button" tabindex="0" style="cursor:pointer">
+    <div class="t">${stateTag(h)} ${esc(h.label)}</div>
+    <div class="meta">${fmtTime(h.created)}｜${esc(h.req)}</div>
+    ${h.result && h.result.message ? `<div class="meta">${esc(h.result.message)}</div>` : ""}
+    ${h.error ? `<div class="meta err">${esc(h.error)}</div>` : ""}
+  </div>`).join("");
+}
+$("stList").addEventListener("click", (ev) => { const it = ev.target.closest(".item[data-req]"); if (it) openDetail(it.dataset.req); });
+$("stBack").addEventListener("click", () => { if (history.state && history.state.v === "status") { history.back(); return; } curDetail = null; $("stDetailView").classList.add("hidden"); $("stListView").classList.remove("hidden"); renderStatusList(); });
+$("stPoll").addEventListener("click", () => { pollOnce(); toast("確かめています…", 1500); });
+$("stClear").addEventListener("click", () => {
+  if (!confirm("終わった要求を一覧から消します（動いているものは残します）。よろしいですか？")) return;
+  hist = hist.filter(isActive); saveHist(); renderStatusList(); renderWrite();
+});
+function openDetail(req) {
+  curDetail = req;
+  $("stListView").classList.add("hidden"); $("stDetailView").classList.remove("hidden");
+  showTab("status");
+  history.pushState({v: "status"}, "");
+  renderDetail(req);
+}
+function runStatusJa(h) {
+  if (h.state === "sending") return "送信中";
+  if (h.state === "error") return "頼めませんでした";
+  if (!h.runStatus) return "まだ見つかりません（動き出すまで1〜2分）";
+  if (h.runStatus === "completed") return "完了（" + conclusionJa(h.runConclusion) + "）";
+  return {queued: "順番待ち", in_progress: "実行中", waiting: "待ち", requested: "受付", pending: "待ち"}[h.runStatus] || h.runStatus;
+}
+async function renderDetail(req, quiet) {
+  const h = findHist(req); if (!h) return;
+  const box = $("stDetail");
+  const argvTxt = h.argv.map(a => /\s/.test(a) ? JSON.stringify(a) : a).join(" ");
+  let html = `<div class="card"><h3>${stateTag(h)} ${esc(h.label)}</h3>
+    <div class="kv"><div>要求ID</div><div>${esc(h.req)}</div><div>頼んだ時刻</div><div>${fmtTime(h.created)}</div>
+    <div>引数</div><div style="word-break:break-all">${esc(argvTxt)}</div>
+    <div>Actions</div><div>${h.runUrl ? `<a href="${esc(h.runUrl)}" target="_blank" rel="noopener">${esc(runStatusJa(h))}（開く）</a>` : esc(runStatusJa(h))}</div></div>
+    ${h.error ? `<p class="err">${esc(h.error)}</p>` : ""}`;
+  if (isActive(h)) html += `<p class="note">10秒ごとに確かめています。画面を閉じても、開き直せば続きを追います。</p>`;
+  const c = h.ctx || {};
+  if (c.kind && c.job) html += `<button class="small" data-open-kind="${esc(c.kind)}" data-open-job="${esc(c.job)}" style="width:100%">この原稿を開く</button>`;
+  html += `</div>`;
+  let res = null;
+  if (h.state === "done" && h.result && h.result.rc !== -1) {
+    try { res = await fetchResult(h); } catch (e) { html += `<p class="note err">結果ファイルを読めませんでした：${esc(e.message)}</p>`; }
+  }
+  if (h.state === "done" && h.result) {
+    const r = res || h.result;
+    html += `<div class="card"><h3>結果</h3>
+      <p class="${r.ok ? "okc" : "err"}">${esc(r.message || (r.ok ? "成功しました" : "止まりました"))}（終了コード ${esc(r.rc)}）</p>
+      ${r.commit ? `<p class="note">main に反映しました（コミット ${esc(r.commit)}）。PC の schoolpost は「GitHub と同期」で取り込めます。</p>` : ""}</div>`;
+    const js = res ? res.json : h.jsonData;
+    if (h.argv[0] === "writer" && js && r.ok) html += `<div class="card">${writerHtml(js, h)}</div>`;
+    else if (js != null) html += `<details class="card"><summary>結果の中身（JSON）</summary><pre>${esc(JSON.stringify(js, null, 1).slice(0, 40000))}</pre></details>`;
+    const out = res ? String(res.output || "") : (h.result.tail || "");
+    html += `<details class="card"${r.ok ? "" : " open"}><summary>ログの末尾</summary><pre>${esc(out.slice(-12000))}</pre></details>`;
+    html += `<div class="row"><button class="small" data-d="again">同じ操作をもう一度</button></div>`;
+  }
+  if (curDetail !== req) return;
+  if (quiet && box.dataset.req === req && box.dataset.state === h.state + (h.runStatus || "")) return;
+  box.dataset.req = req; box.dataset.state = h.state + (h.runStatus || "");
+  box.innerHTML = html;
+}
+$("stDetail").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button[data-d]"); if (!b) return;
+  const h = findHist(curDetail); if (!h) return;
+  if (b.dataset.d === "again") {
+    let input = null;
+    if (h.hasInput) {
+      try { input = await readText(`inbox/${h.req}.txt`, BRANCH); }
+      catch (e) { alert("前に渡した文字（概要）を読めませんでした：" + e.message); return; }
+    }
+    const risky = ["post", "x-post", "x-reply", "delete-drafts"].includes(h.argv[1]);
+    const e2 = await runRemote({label: h.label, argv: h.argv, input, after: h.after, ctx: Object.assign({}, h.ctx),
+      confirm: `「${h.label}」をもう一度動かします。` + (risky ? "\n投稿・削除を含む操作です。取り消せません。" : "") + "\nよろしいですか？"});
+    if (e2) openDetail(e2.req);
+  }
+});
+
+/* ============================================================ 設定 */
+$("setToken").value = token();
+$("setRepo").value = shared.get("repo", "") || "oomizu3/koseiyuki-auto";
+$("setShow").addEventListener("change", () => { $("setToken").type = $("setShow").checked ? "text" : "password"; });
+$("setSave").addEventListener("click", () => {
+  const t = $("setToken").value.trim(), r = $("setRepo").value.trim() || "oomizu3/koseiyuki-auto";
+  if (!/^[\w.-]+\/[\w.-]+$/.test(r)) { alert("リポジトリは「持ち主/名前」の形で入れてください。"); return; }
+  const ok = shared.set("token", t) && shared.set("repo", r);
+  branchReady = false; cacheClear(); listMeta.school = null; listMeta.blog = null;
+  $("setNote").textContent = ok ? "保存しました（kpipe のアプリにも同じものが入ります）。" : "保存できませんでした（ブラウザの設定で保存が止められているかもしれません）。";
+  if (ok) pollOnce();
+});
+$("setTest").addEventListener("click", async () => {
+  $("setNote").textContent = "確かめています…";
+  try {
+    const r = await gh(`/repos/${repo()}`);
+    let wf = "";
+    try { await gh(`/repos/${repo()}/actions/workflows/${WORKFLOW}`); wf = "workflow kpipe-remote.yml もあります。"; }
+    catch (e) { wf = "workflow kpipe-remote.yml が見つかりません（" + e.message + "）。"; }
+    $("setNote").textContent = `つながりました：${r.full_name}（${r.private ? "非公開" : "公開"}）。${wf}`;
+  } catch (e) { $("setNote").textContent = "つながりません：" + e.message; }
+});
+document.querySelectorAll(".fsset").forEach(b => b.addEventListener("click", () => { store.set("fs", Number(b.dataset.k)); store.set("bodyExtra", 0); applyFs(); }));
+$("setCacheClear").addEventListener("click", () => { cacheClear(); listMeta.school = null; listMeta.blog = null; toast("控えを消しました"); });
+
+/* ============================================================ 起動 */
+function init() {
+  applyFs();
+  const k = store.get("wrKind", "school");
+  const r = document.querySelector(`input[name="wrKind"][value="${k === "blog" ? "blog" : "school"}"]`);
+  if (r) r.checked = true;
+  wrSyncChars(true);
+  $("wrBrief").value = store.get("wrDraft", "");
+  if ($("wrBrief").value) $("wrBriefCount").textContent = `${$("wrBrief").value.replace(/\s/g, "").length} 字`;
+  renderStatusList(); updateActiveInfo();
+  let tab = store.get("tab", "write");
+  if (!token()) tab = "settings";
+  if (!document.getElementById("tab-" + tab)) tab = "write";
+  showTab(tab);
+  if (token()) pollOnce();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && hist.some(isActive)) pollOnce(); });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+init();
+</script>
+</body>
+</html>
