@@ -205,9 +205,22 @@ a{color:var(--navy)}
     <div class="card">
       <h3>投稿状況</h3>
       <div id="scStatus"></div>
-      <p class="note">note と DMM ラウンジへの下書きは PC の schoolpost で行います（専用ブラウザが要るので、クラウドからは投稿できません）。</p>
+      <p class="note">note と DMM ラウンジは、PC の schoolpost で下書きするか、下の「note・DMM に貼る」でスマホから手で貼ります（クラウドからは投稿できません）。</p>
       <p class="note warn">WordPress の会員保護（購読会員＋アカデミー会員）は、WordPress の管理画面で手で設定します。</p>
       <button id="scResReload" class="small" style="width:100%">投稿状況を読み直す</button>
+    </div>
+
+    <div class="card">
+      <h3>note・DMM に貼る</h3>
+      <p class="note">上の欄の今の文字をコピーします（保存前の直しも入ります）。note と DMM の投稿画面に、タイトルと本文をそれぞれ貼って下書き保存してください。アイキャッチは「画像を保存」で保存した画像を使います。</p>
+      <div class="row">
+        <button class="pri" id="scCopyTitle">タイトルをコピー</button>
+        <button class="pri" id="scCopyBody">本文をコピー</button>
+      </div>
+      <div class="row">
+        <a class="btn" href="https://note.com/notes/new" target="_blank" rel="noopener">note の投稿画面を開く</a>
+        <a class="btn" href="https://salon.dmm.com/163" target="_blank" rel="noopener">DMM ラウンジを開く</a>
+      </div>
     </div>
 
     <div class="card">
@@ -1338,6 +1351,16 @@ $("blCopy").addEventListener("click", async (ev) => {
   if (await copyText(t)) toast(`コピーしました（${t.length} 字）`, 2000); else alert("コピーできませんでした。欄を長押しして選んでください。");
 });
 ["blX", "blXr", "blAm", "blTitle"].forEach(id => $(id).addEventListener("input", () => { if (doc.blog) renderCopy(); }));
+$("scCopyTitle").addEventListener("click", async () => {
+  const t = $("scTitle").value.trim();
+  if (!t) return toast("タイトルが空です", 2000);
+  if (await copyText(t)) toast(`タイトルをコピーしました（${t.length} 字）`, 2000); else alert("コピーできませんでした。欄を長押しして選んでください。");
+});
+$("scCopyBody").addEventListener("click", async () => {
+  const t = $("scBody").value.trim();
+  if (!t) return toast("本文が空です", 2000);
+  if (await copyText(t)) toast(`本文をコピーしました（${t.length} 字）`, 2000); else alert("コピーできませんでした。欄を長押しして選んでください。");
+});
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
   try {

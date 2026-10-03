@@ -1,4 +1,5 @@
 {
+  "id": "/podcast-rss/schoolpost-app/",
   "name": "記事投稿",
   "short_name": "記事投稿",
   "description": "記事投稿（schoolpost）のスマホ版。原稿を書いてもらい、直して、GitHub Actions 経由で下書き投稿する",
@@ -11,9 +12,29 @@
   "background_color": "#f5f0e4",
   "theme_color": "#1f3a5f",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
-    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ]
 }
