@@ -164,6 +164,31 @@ a{color:var(--navy)}
     <summary>これまでに頼んだ原稿</summary>
     <div class="list" id="wrPast"></div>
   </details>
+
+  <h2>Claude アプリで書いた原稿を送る</h2>
+  <div class="card">
+    <p class="note">Claude アプリ（Cowork）で書いた原稿が GitHub に届かなかったとき、ここに貼って送ります。Claude アプリに「article.md の全文をそのまま表示して」と頼み、出てきた文字（--- で始まる部分から最後まで）をコピーして貼ってください。送った原稿は「スクール」「ブログ」の一覧に出て、PC の schoolpost にも入ります。</p>
+    <label class="f">種類</label>
+    <div class="seg" role="radiogroup" aria-label="送る原稿の種類">
+      <label><input type="radio" name="imKind" value="school" checked><span>スクール記事</span></label>
+      <label><input type="radio" name="imKind" value="blog"><span>ブログ記事</span></label>
+    </div>
+    <label class="f" for="imArticle">article.md（全文）</label>
+    <textarea class="brief" id="imArticle" spellcheck="false" placeholder="---&#10;title: …&#10;…&#10;---&#10;本文…"></textarea>
+    <div id="imBlogFields" class="hidden">
+      <p class="note">ブログ記事は、X 版・先頭リプライ・アメブロ版もあれば貼ります（無ければ空のままで大丈夫です。あとでこのアプリで書き足せます）。</p>
+      <label class="f" for="imX">X 本文（x.txt）</label>
+      <textarea id="imX" spellcheck="false" rows="4"></textarea>
+      <label class="f" for="imXr">先頭リプライ（x_reply.txt）</label>
+      <textarea id="imXr" spellcheck="false" rows="3"></textarea>
+      <label class="f" for="imAm">アメブロ版（ameblo.txt）</label>
+      <textarea id="imAm" spellcheck="false" rows="6"></textarea>
+    </div>
+    <div class="stack" style="margin-top:8px">
+      <button class="pri" id="imGo">GitHub に送る</button>
+    </div>
+    <p class="muted" id="imMsg"></p>
+  </div>
 </section>
 
 <!-- ============================== スクール記事 ============================== -->
@@ -1360,6 +1385,47 @@ $("scCopyBody").addEventListener("click", async () => {
   const t = $("scBody").value.trim();
   if (!t) return toast("本文が空です", 2000);
   if (await copyText(t)) toast(`本文をコピーしました（${t.length} 字）`, 2000); else alert("コピーできませんでした。欄を長押しして選んでください。");
+});
+/* ---------- Claude アプリで書いた原稿を送る */
+function imKind() { return document.querySelector('input[name="imKind"]:checked').value; }
+document.querySelectorAll('input[name="imKind"]').forEach(r => r.addEventListener("change", () => {
+  $("imBlogFields").classList.toggle("hidden", imKind() !== "blog");
+}));
+$("imGo").addEventListener("click", async () => {
+  const kind = imKind();
+  const art = $("imArticle").value.replace(/^\s+/, "").replace(/\r\n?/g, "\n");
+  if (!token()) return alert("先に「設定」でトークンを貼ってください。");
+  let meta;
+  try { const sp = splitFront(art); meta = parseMeta(sp.front); if (!sp.body.trim()) throw new Error("本文が空です"); }
+  catch (e) { return alert("article.md として読めません：" + e.message); }
+  if (!String(meta.title || "").trim()) return alert("フロントマターに title がありません。");
+  const d = jstNow();
+  const today = `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+  const date = /^\d{8}$/.test(String(meta.date || "")) ? String(meta.date) : today;
+  let slug = String(meta.slug || meta.permalink || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+  if (!slug) slug = kind === "school" ? "article" : "post";
+  const dir = KIND[kind].dir;
+  const btn = $("imGo"); btn.disabled = true; $("imMsg").textContent = "送っています…";
+  try {
+    let job = `${date}_${slug}`, k = 2;
+    while (await readFileOr(`${dir}/${job}/article.md`)) job = `${date}_${slug}-${k++}`;
+    if (!confirm(`「${meta.title}」を ${dir}/${job}/ に送ります。よろしいですか？`)) { $("imMsg").textContent = ""; return; }
+    const files = [["article.md", art.endsWith("\n") ? art : art + "\n"]];
+    if (kind === "blog") {
+      for (const [id, fn] of [["imX", "x.txt"], ["imXr", "x_reply.txt"], ["imAm", "ameblo.txt"]]) {
+        const v = $(id).value.trim();
+        if (v) files.push([fn, v + "\n"]);
+      }
+    }
+    for (const [fn, text] of files) await putFile(`${dir}/${job}/${fn}`, text, null, `${kind}: ${job} スマホのアプリから原稿を送る`);
+    cacheClear(dir);
+    $("imMsg").textContent = `送りました：${dir}/${job}/（${files.map(f => f[0]).join("・")}）`;
+    ["imArticle", "imX", "imXr", "imAm"].forEach(id => $(id).value = "");
+    toast("送りました。原稿を開きます", 2000);
+    await openDoc(kind, job);
+  } catch (e) {
+    $("imMsg").textContent = "送れませんでした：" + e.message;
+  } finally { btn.disabled = false; }
 });
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
