@@ -237,7 +237,7 @@ a{color:var(--navy)}
 
     <div class="card">
       <h3>note・DMM に貼る</h3>
-      <p class="note">上の欄の今の文字をコピーします（保存前の直しも入ります）。note と DMM の投稿画面に、タイトルと本文をそれぞれ貼って下書き保存してください。アイキャッチは「画像を保存」で保存した画像を使います。</p>
+      <p class="note">上の欄の今の文字をコピーします（保存前の直しも入ります）。note と DMM の投稿画面に、タイトルと本文をそれぞれ貼って下書き保存してください。アイキャッチは下の画像を長押しで保存して使います（リンクのコピーもできます）。</p>
       <div class="row">
         <button class="pri" id="scCopyTitle">タイトルをコピー</button>
         <button class="pri" id="scCopyBody">本文をコピー</button>
@@ -1301,7 +1301,7 @@ function renderInfo(kind) {
     html += `<div>ラベル</div><div>${esc(asList(m.labels).join("、") || "（未設定）")}</div>
       <div>ハブ</div><div>${esc(m.hub || "none")}</div>`;
   }
-  html += `<div>アイキャッチ</div><div>${d.names.includes("eyecatch.jpg") || d.names.includes("eyecatch.png") ? "あり" : "なし"}${ec.scene ? `<div class="muted">場面：${esc(ec.scene)}</div>` : ""}</div>`;
+  html += `<div>アイキャッチ</div><div>${(d.res && d.res.eyecatch_url) || d.names.includes("eyecatch.jpg") || d.names.includes("eyecatch.png") ? "あり" : "なし"}${ec.scene ? `<div class="muted">場面：${esc(ec.scene)}</div>` : ""}</div>`;
   $(p + "Info").innerHTML = html;
   const cands = asList(m.title_candidates).filter(c => c !== d.title);
   $(p + "Cands").innerHTML = cands.length ? `<span class="muted" style="width:100%">候補（押すとタイトル欄に入ります）</span>` + cands.map(c => `<button type="button" data-cand="${esc(c)}">${esc(c)}</button>`).join("") : "";
@@ -1439,6 +1439,22 @@ async function copyText(t) {
 async function loadImage(kind, job, fresh) {
   const d = doc[kind]; if (!d || d.job !== job) return;
   const box = $(KIND[kind].p + "Img");
+  if (fresh) { try { await reloadResult(kind); } catch (e) {} }
+  const url = String((d.res && d.res.eyecatch_url) || "").trim();
+  const save = `${job}_${kind === "blog" ? "ブログ" : "スクール"}_アイキャッチ`;
+  if (url) {
+    /* 2026-10-05〜 アイキャッチの置き場は WordPress のメディア。リンクを出す */
+    box.innerHTML = `<img src="${esc(url)}" alt="アイキャッチ画像" loading="lazy">
+      <div class="copyrow"><div class="head"><span class="muted">画像のリンク（WordPress）</span><button class="small" id="${KIND[kind].p}ImgCopy">コピー</button></div>
+      <div class="val">${esc(url)}</div></div>
+      <a class="btn pri" href="${esc(url)}" target="_blank" rel="noopener" style="width:100%">画像を開く（長押しで保存）</a>
+      <p class="note">画像は WordPress（spacebrothers.blog）のメディアに置いてあります。開いた画像を長押しして「画像をダウンロード」で端末に保存できます。</p>`;
+    $(KIND[kind].p + "ImgCopy").addEventListener("click", async () => {
+      if (await copyText(url)) toast("画像のリンクをコピーしました", 2000); else alert("コピーできませんでした。リンクを長押しして選んでください。");
+    });
+    return;
+  }
+  /* 以前の原稿（GitHub に画像が入っているもの） */
   let names = d.names;
   if (fresh) { try { cacheClear("d:" + d.dir); names = (await listDir(d.dir)).map(x => x.name); d.names = names; } catch (e) {} }
   const fn = names.includes("eyecatch.jpg") ? "eyecatch.jpg" : names.includes("eyecatch.png") ? "eyecatch.png" : "";
@@ -1450,10 +1466,10 @@ async function loadImage(kind, job, fresh) {
     if (imgUrl[kind]) URL.revokeObjectURL(imgUrl[kind]);
     const typed = blob.type && blob.type.startsWith("image/") ? blob : new Blob([blob], {type: fn.endsWith(".png") ? "image/png" : "image/jpeg"});
     imgUrl[kind] = URL.createObjectURL(typed);
-    const save = `${job}_${kind === "blog" ? "ブログ" : "スクール"}_アイキャッチ.${fn.split(".").pop()}`;
+    const fname = `${save}.${fn.split(".").pop()}`;
     box.innerHTML = `<img src="${imgUrl[kind]}" alt="アイキャッチ画像">
-      <a class="btn pri" href="${imgUrl[kind]}" download="${esc(save)}" style="width:100%">画像を保存</a>
-      <p class="note">端末の「ダウンロード」に ${esc(save)} として保存します。</p>`;
+      <a class="btn pri" href="${imgUrl[kind]}" download="${esc(fname)}" style="width:100%">画像を保存</a>
+      <p class="note">端末の「ダウンロード」に ${esc(fname)} として保存します。</p>`;
   } catch (e) { box.innerHTML = `<p class="err">画像を読めませんでした：${esc(e.message)}</p>`; }
 }
 
@@ -1540,7 +1556,7 @@ $("scPostWp").addEventListener("click", () => {
 $("scEye").addEventListener("click", () => {
   const d = doc.school; if (!d) return;
   docRun("school", "eyecatch", "アイキャッチを作る", ["schoolpost", "eyecatch", d.job, "--kind", "school"],
-    (d.names.includes("eyecatch.jpg") ? "アイキャッチはもうあります。作り直して置き換えます。\n" : "") + "画像の生成（OpenAI）の費用がかかります。よろしいですか？");
+    ((d.res && d.res.eyecatch_url) || d.names.includes("eyecatch.jpg") ? "アイキャッチはもうあります。作り直して置き換えます。\n" : "") + "画像の生成（OpenAI）の費用がかかります。よろしいですか？");
 });
 $("scCheck").addEventListener("click", () => {
   const d = doc.school; if (!d) return;
@@ -1567,7 +1583,7 @@ $("blUrl").addEventListener("click", () => {
 $("blEye").addEventListener("click", () => {
   const d = doc.blog; if (!d) return;
   docRun("blog", "eyecatch", "アイキャッチを作る", ["schoolpost", "eyecatch", d.job, "--kind", "blog"],
-    (d.names.includes("eyecatch.jpg") ? "アイキャッチはもうあります。作り直して置き換えます。\n" : "") + "画像の生成（OpenAI）の費用がかかります。よろしいですか？");
+    ((d.res && d.res.eyecatch_url) || d.names.includes("eyecatch.jpg") ? "アイキャッチはもうあります。作り直して置き換えます。\n" : "") + "画像の生成（OpenAI）の費用がかかります。よろしいですか？");
 });
 $("blDel").addEventListener("click", () => {
   const d = doc.blog; if (!d) return;
