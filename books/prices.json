@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-12T03:53:35+00:00",
- "count": 50,
+ "updated": "2026-11-12T03:54:04+00:00",
+ "count": 65,
  "prices": {
   "B0HQVZH55X": {
    "amount": 1540,
@@ -201,6 +201,66 @@
   "B09JMPJ7S1": {
    "amount": 250,
    "display": "￥250"
+  },
+  "B09HM9NK7S": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B09DXR6SLT": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B09B4V2TV7": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B0979YPQQ1": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B096G23R47": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B0957WM8PC": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B094477JN6": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B093CRKHMG": {
+   "amount": 250,
+   "display": "￥250"
+  },
+  "B007X9TEF8": {
+   "amount": 330,
+   "display": "￥330"
+  },
+  "B0HQVTXRZP": {
+   "amount": 1980,
+   "display": "￥1,980"
+  },
+  "B0HQVLKYL4": {
+   "amount": 680,
+   "display": "￥680"
+  },
+  "B0HPZVML7N": {
+   "amount": 1628,
+   "display": "￥1,628"
+  },
+  "B0HPZYFP51": {
+   "amount": 460,
+   "display": "￥460"
+  },
+  "B0HQC2V5SN": {
+   "amount": 1760,
+   "display": "￥1,760"
+  },
+  "B0HQBWYP1D": {
+   "amount": 540,
+   "display": "￥540"
   }
  }
 }

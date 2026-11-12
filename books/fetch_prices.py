@@ -1,7 +1,7 @@
 """Amazon Creators API から著書の価格を取得して books/prices.json に書く。
 認証情報は環境変数 AMAZON_CREATORS_ID / AMAZON_CREATORS_SECRET から読む。
 新しい本を足すときは books/asins.txt に ASIN を1行足すだけ。"""
-import json, os, sys, urllib.request, urllib.error, datetime, pathlib
+import json, os, sys, time, urllib.request, urllib.error, datetime, pathlib
 HERE = pathlib.Path(__file__).resolve().parent
 TAG = 'japanspiritua-22'
 MP = 'www.amazon.co.jp'
@@ -30,9 +30,14 @@ def main():
          'x-marketplace': MP}
     prices, errors = {}, []
     for i in range(0, len(asins), 10):
-        s, r = post('https://creatorsapi.amazon/catalog/v1/getItems',
-                    {'itemIds': asins[i:i + 10], 'partnerTag': TAG, 'marketplace': MP,
-                     'resources': ['offersV2.listings.price']}, h)
+        for attempt in range(5):
+            if i or attempt:
+                time.sleep(2 * (attempt + 1))
+            s, r = post('https://creatorsapi.amazon/catalog/v1/getItems',
+                        {'itemIds': asins[i:i + 10], 'partnerTag': TAG, 'marketplace': MP,
+                         'resources': ['offersV2.listings.price']}, h)
+            if s != 429:
+                break
         if s != 200:
             errors.append(f'{s}: {r}')
             continue
@@ -42,6 +47,8 @@ def main():
             m = ((best or {}).get('price') or {}).get('money')
             if m:
                 prices[it['asin']] = {'amount': m['amount'], 'display': m['displayAmount']}
+    if errors:
+        sys.exit('一部の取得に失敗したので prices.json は書き換えない: ' + ' / '.join(errors))
     if not prices:
         sys.exit('価格が1件も取れなかった: ' + ' / '.join(errors))
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
