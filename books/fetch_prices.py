@@ -47,6 +47,22 @@ def main():
             m = ((best or {}).get('price') or {}).get('money')
             if m:
                 prices[it['asin']] = {'amount': m['amount'], 'display': m['displayAmount']}
+    # 新品の出品が無い本（紙の本が品切れなど）は、中古の最安値を「中古」と添えて出す
+    missing = [a for a in asins if a not in prices]
+    for i in range(0, len(missing), 10):
+        time.sleep(2)
+        s, r = post('https://creatorsapi.amazon/catalog/v1/getItems',
+                    {'itemIds': missing[i:i + 10], 'partnerTag': TAG, 'marketplace': MP, 'condition': 'Used',
+                     'resources': ['offersV2.listings.price']}, h)
+        if s != 200:
+            continue
+        for it in (r.get('itemsResult') or {}).get('items', []):
+            ls = (it.get('offersV2') or {}).get('listings') or []
+            ms = [((l.get('price') or {}).get('money')) for l in ls]
+            ms = [m for m in ms if m]
+            if ms:
+                m = min(ms, key=lambda x: x['amount'])
+                prices[it['asin']] = {'amount': m['amount'], 'display': '\u4e2d\u53e4 ' + m['displayAmount'], 'used': True}
     if errors:
         sys.exit('一部の取得に失敗したので prices.json は書き換えない: ' + ' / '.join(errors))
     if not prices:
