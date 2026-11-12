@@ -34,7 +34,7 @@ def main():
             if i or attempt:
                 time.sleep(2 * (attempt + 1))
             s, r = post('https://creatorsapi.amazon/catalog/v1/getItems',
-                        {'itemIds': asins[i:i + 10], 'partnerTag': TAG, 'marketplace': MP,
+                        {'itemIds': asins[i:i + 10], 'partnerTag': TAG, 'marketplace': MP, 'condition': 'New',
                          'resources': ['offersV2.listings.price']}, h)
             if s != 429:
                 break
