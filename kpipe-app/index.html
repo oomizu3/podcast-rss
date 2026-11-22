@@ -1,0 +1,1840 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>kpipe</title>
+<meta name="description" content="kpipe（動画制作ソフト）をスマホから GitHub Actions 経由で動かすアプリ">
+<meta name="theme-color" content="#1f3a5f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1726" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f5f0e4; --surface:#fffdf7; --surface2:#efe8d8; --text:#1d2740; --muted:#5d6577;
+  --line:#d8cfba; --navy:#1f3a5f; --navy-text:#fffdf7; --accent:#9a7a34; --danger:#9b2c2c;
+  --ok:#2f6b3f; --warn:#8a5a00; --focus:#c99a3a;
+  --fs:17px; --script-fs:18px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1726; --surface:#172238; --surface2:#1f2c46; --text:#ece6d8; --muted:#a9b0bf;
+    --line:#2c3a57; --navy:#8fb3e0; --navy-text:#0f1726; --accent:#d4b46a; --danger:#e08a8a;
+    --ok:#8ccf9c; --warn:#e6c06a; --focus:#d4b46a;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;
+  font-size:var(--fs);line-height:1.65;-webkit-text-size-adjust:100%;overflow-x:hidden}
+header.top{position:sticky;top:0;z-index:5;background:var(--navy);color:var(--navy-text);padding:10px 16px;
+  display:flex;align-items:center;gap:10px;padding-top:max(10px, env(safe-area-inset-top))}
+header.top h1{font-size:19px;margin:0;font-weight:700;flex:1;letter-spacing:.04em}
+header.top .act{font-size:14px;opacity:.9}
+main{padding:12px 16px 120px;max-width:640px;margin:0 auto}
+section.tab{display:none}
+section.tab.on{display:block}
+h2{font-size:20px;margin:6px 0 10px}
+h3{font-size:18px;margin:4px 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
+.card.sub{background:var(--surface2)}
+label.f{display:block;font-size:15px;color:var(--muted);margin:8px 0 4px}
+input[type=text],input[type=url],input[type=password],input[type=number],input[type=date],select,textarea{
+  width:100%;font-size:var(--fs);font-family:inherit;color:var(--text);background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:48px}
+textarea{line-height:1.8}
+textarea.script{font-size:var(--script-fs);line-height:2;min-height:55vh;padding:12px}
+textarea.part{font-size:var(--script-fs);line-height:1.9;min-height:30vh}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+button,.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:10px 14px;
+  font-size:var(--fs);font-family:inherit;border-radius:10px;border:1px solid var(--navy);background:var(--surface);
+  color:var(--navy);cursor:pointer;text-decoration:none;line-height:1.35;text-align:center}
+button.pri{background:var(--navy);color:var(--navy-text)}
+button.danger{border-color:var(--danger);color:var(--danger)}
+button.pri.danger{background:var(--danger);color:#fff}
+button.small{min-height:44px;padding:6px 12px;font-size:15px}
+button:disabled{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 auto}
+.stack{display:flex;flex-direction:column;gap:8px}
+.stack > button{width:100%}
+.chk{display:flex;align-items:center;gap:10px;min-height:48px;font-size:var(--fs)}
+.chk input{width:26px;height:26px;flex:0 0 auto}
+.chks{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.muted{color:var(--muted);font-size:15px}
+.note{font-size:15px;color:var(--muted);margin:6px 0}
+.warn{color:var(--warn)}
+.err{color:var(--danger)}
+.okc{color:var(--ok)}
+.dirty{color:var(--danger);font-size:15px;min-height:1.4em}
+pre{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.55;background:var(--surface2);
+  padding:10px;border-radius:8px;max-height:60vh;overflow:auto;margin:6px 0}
+details{margin:0 0 14px}
+details > summary{cursor:pointer;min-height:48px;display:flex;align-items:center;font-weight:700;font-size:18px;
+  padding:6px 4px;list-style:none}
+details > summary::before{content:"▸";margin-right:8px;color:var(--accent)}
+details[open] > summary::before{content:"▾"}
+.list .item{border-top:1px solid var(--line);padding:10px 0}
+.list .item:first-child{border-top:0}
+.item .t{font-weight:700}
+.item .meta{font-size:14px;color:var(--muted)}
+.tag{display:inline-block;font-size:13px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin-right:4px;color:var(--muted)}
+.tag.run{border-color:var(--accent);color:var(--accent)}
+.tag.ok{border-color:var(--ok);color:var(--ok)}
+.tag.ng{border-color:var(--danger);color:var(--danger)}
+.prev img,.prev video{width:100%;border-radius:8px;display:block;margin:6px 0;background:#000}
+.prev audio{width:100%;margin:6px 0}
+.three{white-space:pre-wrap;font-size:16px}
+.thumbs img{width:100%;border-radius:8px;margin:4px 0}
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav.bottom button{border:0;border-radius:0;background:transparent;color:var(--muted);flex-direction:column;gap:0;
+  min-height:62px;padding:6px 0;font-size:14px}
+nav.bottom button .ic{font-size:20px;line-height:1.1}
+nav.bottom button.on{color:var(--navy);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
+nav.bottom .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font-size:12px;line-height:18px}
+#toast{position:fixed;left:16px;right:16px;bottom:84px;z-index:20;background:var(--navy);color:var(--navy-text);
+  padding:12px 14px;border-radius:10px;font-size:16px;display:none;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.fsbar{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.fsbar button{min-width:56px}
+.chap{border-top:1px solid var(--line);padding:10px 0}
+.chap:first-child{border-top:0}
+.selpart{outline:2px solid var(--accent);border-radius:8px;padding:8px}
+a{color:var(--navy)}
+.kv{display:grid;grid-template-columns:6.5em 1fr;gap:2px 8px;font-size:15px}
+.kv div:nth-child(odd){color:var(--muted)}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>kpipe</h1>
+  <span class="act" id="activeInfo"></span>
+</header>
+
+<main>
+<!-- ============================== ブログ ============================== -->
+<section class="tab on" id="tab-blog">
+  <h2>ブログ記事を動画化</h2>
+  <div class="card">
+    <label class="f" for="blogUrl">記事URL（spacebrothers.jp）</label>
+    <input type="url" id="blogUrl" placeholder="https://www.spacebrothers.jp/..." inputmode="url" autocomplete="off">
+    <div class="chks">
+      <label class="chk"><input type="checkbox" id="optApprove" checked>台本を先に確認する</label>
+      <label class="chk"><input type="checkbox" id="optNoShorts">Shortsなし</label>
+      <label class="chk"><input type="checkbox" id="optNoPod">ポッドキャストなし</label>
+      <label class="chk"><input type="checkbox" id="optNoIg">Instagramなし</label>
+    </div>
+    <div class="stack">
+      <button class="pri" id="blogStart">動画化を始める</button>
+      <button id="blogDry">台本だけ作る（投稿しない）</button>
+    </div>
+    <p class="note" id="blogUrlNote"></p>
+  </div>
+
+  <details class="card" id="backlogBox">
+    <summary>過去記事の台帳から選ぶ</summary>
+    <label class="f" for="blCat">区分</label>
+    <select id="blCat"><option value="すべて">すべて</option></select>
+    <div class="row">
+      <div><label class="f" for="blStatus">状態</label>
+        <select id="blStatus">
+          <option>未処理</option><option>要確認</option><option>未完了</option><option>作成中</option>
+          <option>公開済み</option><option>見送り</option><option>すべて</option>
+        </select></div>
+      <div><label class="f" for="blSort">並べ替え</label>
+        <select id="blSort">
+          <option value="番号">番号</option><option value="検索表示回数_12か月">検索表示（12か月）</option>
+          <option value="本文字数">本文字数</option><option value="記事公開日">記事公開日</option>
+        </select></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="blDesc">大きい順・新しい順にする</label>
+    <label class="f" for="blQuery">語で絞る（空白で区切ると全部を含むもの）</label>
+    <input type="text" id="blQuery" placeholder="例：前世 宇宙">
+    <div class="row" style="margin-top:8px">
+      <button class="pri" id="blRefresh">絞り込む</button>
+      <button id="blReload">台帳を読み直す</button>
+    </div>
+    <p class="note" id="blCount"></p>
+    <div class="list" id="blList"></div>
+    <button id="blMore" class="hidden" style="width:100%">もっと見る</button>
+  </details>
+
+  <div class="card">
+    <h3>台本（job）</h3>
+    <label class="f" for="blogJobSel">job の一覧</label>
+    <select id="blogJobSel"><option value="">（読み込み中または未取得）</option></select>
+    <div class="row" style="margin-top:8px">
+      <button id="blogJobsRefresh" class="small">一覧を取り直す</button>
+    </div>
+    <label class="f" for="blogJob">job</label>
+    <input type="text" id="blogJob" placeholder="例：20261003_kubo-fukuhara-past-life" autocomplete="off">
+    <div class="row" style="margin-top:8px"><button class="pri" id="blogLoad">この job を読み込む</button></div>
+    <p class="three" id="blogHead"></p>
+    <p class="note" id="blogResult"></p>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h3 style="flex:0 1 auto">台本の本文</h3>
+      <div class="fsbar" style="flex:0 1 auto"><span class="muted">文字</span><button class="small fsminus">小</button><button class="small fsplus">大</button></div>
+    </div>
+    <p class="note">ここで直接書き直せます。「台本を保存」で反映し、章立ても本文に合わせ直します。</p>
+    <textarea class="script" id="blogScript" spellcheck="false"></textarea>
+    <div class="dirty" id="blogDirty"></div>
+    <div class="row">
+      <button class="pri" id="blogSave">台本を保存（章を合わせ直す）</button>
+      <button id="blogReloadScript">読み直す（保存前に戻す）</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="f" for="blogInst">直しの指示</label>
+    <textarea id="blogInst" rows="3" placeholder="例：冒頭をもっと短く。結びに問いかけを一つ"></textarea>
+    <div class="stack" style="margin-top:8px">
+      <button id="blogRevise">直しを反映（指示文）</button>
+      <button id="blogPreview">動画だけ作って確認（投稿しない）</button>
+      <button id="blogRetouch">動画を手直し…</button>
+      <button class="pri danger" id="blogBuild">OK → 動画化して投稿</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== シニア ============================== -->
+<section class="tab" id="tab-senior">
+  <h2>シニアチャンネル</h2>
+  <div class="card">
+    <label class="f" for="srDate">公開日</label>
+    <select id="srDate"></select>
+    <div class="row" style="margin-top:8px">
+      <button id="srPick">この日の回を調べる</button>
+      <button id="srDraft" class="pri">この日の台本を書く</button>
+    </div>
+    <p class="note" id="srDayNote"></p>
+    <label class="f" for="srNo">番号（任意）</label>
+    <div class="row">
+      <input type="number" id="srNo" inputmode="numeric" placeholder="例：155" style="flex:1 1 40%">
+      <button id="srLoad" style="flex:1 1 50%">この番号を読み込む</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="srMotion">章画像をゆっくり寄せる</label>
+    <div class="row"><button id="srStatus" class="small">台帳の状態</button><button id="srSchedRefresh" class="small">日付の一覧を読み直す</button></div>
+  </div>
+
+  <div class="card">
+    <p class="three" id="srThree">（公開日か番号を選ぶと、タイトル／サムネ1行目／ショート1行目がここに出ます）</p>
+    <p class="note" id="srResult"></p>
+    <div class="thumbs" id="srThumbs"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h3 style="flex:0 1 auto">台本の本文</h3>
+      <div class="fsbar" style="flex:0 1 auto"><span class="muted">文字</span><button class="small fsminus">小</button><button class="small fsplus">大</button></div>
+    </div>
+    <textarea class="script" id="srScript" spellcheck="false"></textarea>
+    <div class="dirty" id="srDirty"></div>
+    <div class="row">
+      <button class="pri" id="srSave">台本を保存（章を合わせ直す）</button>
+      <button id="srReloadScript">読み直す（保存前に戻す）</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="f" for="srInst">直しの指示</label>
+    <textarea id="srInst" rows="3" placeholder="例：二章の例え話を、夫を見送った人の話に"></textarea>
+    <div class="stack" style="margin-top:8px">
+      <button id="srRevise">直しを反映（指示文）</button>
+      <button id="srPreview">動画だけ作って確認（投稿しない）</button>
+      <button id="srRetouch">動画を手直し…</button>
+      <button class="pri danger" id="srBuild">OK → 動画化して公開日の19時に予約投稿</button>
+    </div>
+  </div>
+
+  <details class="card" id="srThumbBox">
+    <summary>サムネの別案を作る</summary>
+    <label class="f" for="srL1">別案 1行目</label>
+    <input type="text" id="srL1">
+    <label class="f" for="srL2">2行目</label>
+    <input type="text" id="srL2">
+    <div class="row" style="margin-top:8px"><button class="pri" id="srThumb">別案を作る</button></div>
+  </details>
+</section>
+
+<!-- ============================== 手直し ============================== -->
+<section class="tab" id="tab-retouch">
+  <h2>動画の手直し</h2>
+  <div class="card">
+    <p id="rtTarget" class="three">（ブログ・シニア・連載の回の画面で「動画を手直し…」を押すと、ここで開きます）</p>
+    <p class="note warn" id="rtWarn"></p>
+  </div>
+
+  <details class="card" id="rtChapBox" open>
+    <summary>章の画像</summary>
+    <button id="rtChapLoad" class="pri" style="width:100%">章の一覧を取ってくる</button>
+    <p class="note" id="rtChapNote"></p>
+    <div id="rtChapList"></div>
+  </details>
+
+  <details class="card" id="rtReadBox">
+    <summary>読み上げの間違いを直す</summary>
+    <p class="note">台本に［語｜よみ］の注記を付け、音声は変わったパートだけ作り直します。</p>
+    <label class="f" for="rtWord">語（字幕の表記）</label>
+    <input type="text" id="rtWord">
+    <label class="f" for="rtReading">よみ（音声。ひらがな・カタカナ）</label>
+    <input type="text" id="rtReading">
+    <label class="chk"><input type="checkbox" id="rtRegister" checked>共通の読み表に登録（次回から3チャンネルで自動）</label>
+    <button id="rtReadDo" class="pri" style="width:100%">読みを直す</button>
+  </details>
+
+  <details class="card" id="rtPartBox">
+    <summary>音声の録り直し（潰れ・言い淀み）</summary>
+    <p class="note">音声が潰れた・言い淀んだところを、そのパート（約1分）だけ録り直します。読み上げ用の文字を書き直してから録り直すと、読ませ方も変えられます（字幕はそのまま）。</p>
+    <button id="rtPartsLoad" class="pri" style="width:100%">パートの一覧を取ってくる</button>
+    <div class="row" style="margin-top:8px">
+      <input type="text" id="rtAt" placeholder="動画の時刻（例 12:34）" style="flex:1 1 50%">
+      <button id="rtFindAt" class="small" style="flex:0 0 auto">時刻で探す</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input type="text" id="rtPhrase" placeholder="そのあたりで読んでいる言葉" style="flex:1 1 50%">
+      <button id="rtFindPh" class="small" style="flex:0 0 auto">言葉で探す</button>
+    </div>
+    <p class="note" id="rtPartNote"></p>
+    <label class="f" for="rtPartSel">パート</label>
+    <select id="rtPartSel"><option value="">（一覧を取ってきてください）</option></select>
+    <div id="rtPartDetail" class="hidden">
+      <pre id="rtPartInfo"></pre>
+      <div class="prev" id="rtPartPrev"></div>
+      <div class="row">
+        <button id="rtListen">このパートを聴く</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="rtStable">安定寄りで録る（崩れにくいが抑揚は少し平ら）</label>
+      <button id="rtRetake" class="pri" style="width:100%">録り直す</button>
+      <label class="f" for="rtTakeSel">前の録音</label>
+      <div class="row">
+        <select id="rtTakeSel" style="flex:1 1 40%"></select>
+        <button id="rtTakeListen" class="small" style="flex:0 0 auto">聴く</button>
+        <button id="rtRestore" class="small" style="flex:0 0 auto">この取りに戻す</button>
+      </div>
+      <div class="prev" id="rtTakePrev"></div>
+      <label class="f" for="rtPartText">読み上げ用の文字（このパート）</label>
+      <p class="note">改行・空行は変えずに、文字だけ直してください。[ ] | 《 》は使えません。字幕は変わりません。</p>
+      <textarea class="part" id="rtPartText" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="rtSpeech" class="pri">読み上げを直して録り直す</button>
+        <button id="rtUndo">直しを取り消す</button>
+      </div>
+    </div>
+  </details>
+
+  <div class="card">
+    <button id="rtRebuild" class="pri" style="width:100%">反映して動画を作り直す（投稿しない）</button>
+    <div class="prev" id="rtVideoPrev"></div>
+  </div>
+</section>
+
+<!-- ============================== 紙芝居 ============================== -->
+<section class="tab" id="tab-family">
+  <h2>家族の紙芝居</h2>
+  <div class="card">
+    <label class="f" for="fmWork">作品</label>
+    <select id="fmWork"><option value="">（一覧を取ってきてください）</option></select>
+    <div class="row" style="margin-top:8px"><button id="fmList">作品の一覧を取ってくる</button></div>
+    <label class="f" for="fmName">作品名（フォルダ名）</label>
+    <input type="text" id="fmName" placeholder="例：cinderella" autocomplete="off">
+    <p class="note" id="fmInfo"></p>
+  </div>
+
+  <details class="card">
+    <summary>新しい作品</summary>
+    <label class="f" for="fmTitle">題</label>
+    <input type="text" id="fmTitle" placeholder="例：シンデレラ・アイナ">
+    <button id="fmNew" class="pri" style="width:100%;margin-top:8px">作品を作る</button>
+  </details>
+
+  <details class="card">
+    <summary>台本の下書き</summary>
+    <label class="f" for="fmBase">下地の作品</label>
+    <input type="text" id="fmBase" placeholder="例：桃太郎">
+    <label class="f" for="fmLead">主役</label>
+    <select id="fmLead"><option>アイナ</option><option>ルイ</option><option>レイ</option></select>
+    <label class="f" for="fmWish">希望</label>
+    <textarea id="fmWish" rows="3"></textarea>
+    <label class="chk"><input type="checkbox" id="fmDraftForce">あっても書き直す</label>
+    <button id="fmDraft" class="pri" style="width:100%">下書きを書く</button>
+  </details>
+
+  <div class="card">
+    <h3>作る</h3>
+    <div class="stack">
+      <button id="fmPages">① 絵の指示を作る（pages）</button>
+      <button id="fmCheck">台本を点検する（check）</button>
+    </div>
+    <label class="f" for="fmImgPages">② 章画像：枚（空なら無い枚だけ。例：1 3 5）</label>
+    <input type="text" id="fmImgPages" inputmode="numeric">
+    <label class="chk"><input type="checkbox" id="fmImgForce">作り直す（force）</label>
+    <button id="fmImages" style="width:100%">② 章画像を作る</button>
+    <button id="fmSheet" style="width:100%;margin-top:8px">章画像の一覧を作る（sheet）</button>
+    <label class="f" for="fmTtsPages">③ 音声：枚（空なら全部）</label>
+    <input type="text" id="fmTtsPages" inputmode="numeric">
+    <label class="f" for="fmVoice">声の ID（空なら既定のひな）</label>
+    <input type="text" id="fmVoice">
+    <label class="chk"><input type="checkbox" id="fmTtsForce">録り直す（force）</label>
+    <button id="fmTts" style="width:100%">③ 音声を作る</button>
+    <label class="chk"><input type="checkbox" id="fmRenderForce">作り直す（force）</label>
+    <button id="fmRender" style="width:100%">④ 動画にする（1080p）</button>
+  </div>
+
+  <details class="card">
+    <summary>1枚を直す</summary>
+    <label class="f" for="fmPage">枚</label>
+    <input type="number" id="fmPage" inputmode="numeric" min="1">
+    <label class="f" for="fmNote">指示</label>
+    <textarea id="fmNote" rows="2"></textarea>
+    <label class="f" for="fmCands">候補の数</label>
+    <select id="fmCands"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+    <button id="fmRedo" style="width:100%;margin-top:8px">作り直し候補を作る（redo）</button>
+    <label class="f" for="fmFile">入れる画像のファイル（例：images/cands/ch03_b.png）</label>
+    <input type="text" id="fmFile" autocomplete="off">
+    <button id="fmPick" style="width:100%;margin-top:8px">この画像をその枚に入れる（pick）</button>
+  </details>
+
+  <div class="card">
+    <label class="chk"><input type="checkbox" id="fmAgain">もう一度アップする（again）</label>
+    <button id="fmUpload" class="pri danger" style="width:100%">⑤ 家族チャンネルへ非公開でアップ</button>
+  </div>
+</section>
+
+<!-- ============================== 実行状況 ============================== -->
+<section class="tab" id="tab-status">
+  <div id="stListView">
+    <h2>実行状況</h2>
+    <div class="row" style="margin-bottom:10px">
+      <button id="stPoll" class="small">今すぐ確かめる</button>
+      <button id="stClear" class="small">終わったものを消す</button>
+    </div>
+    <div class="card list" id="stList"></div>
+  </div>
+  <div id="stDetailView" class="hidden">
+    <button id="stBack" class="small">← 一覧へ戻る</button>
+    <div id="stDetail"></div>
+  </div>
+</section>
+
+<!-- ============================== 設定 ============================== -->
+<section class="tab" id="tab-settings">
+  <h2>設定</h2>
+  <div class="card">
+    <h3>GitHub のトークン</h3>
+    <p class="note">「細かく権限を決めるトークン（fine-grained personal access token）」を作って貼ってください。</p>
+    <ol class="note" style="padding-left:1.3em">
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">トークン作成ページを開く</a></li>
+      <li>「Repository access」で「Only select repositories」を選び、koseiyuki-auto だけを選ぶ</li>
+      <li>「Repository permissions」で次の3つを「Read and write」にする：Actions（動かす）／Contents（台本・結果の読み書き）／Issues</li>
+      <li>有効期限は長めに（切れたら作り直して貼り直す）</li>
+    </ol>
+    <label class="f" for="setToken">トークン</label>
+    <input type="password" id="setToken" autocomplete="off" placeholder="github_pat_...">
+    <label class="chk"><input type="checkbox" id="setShow">トークンを表示する</label>
+    <label class="f" for="setRepo">リポジトリ</label>
+    <input type="text" id="setRepo" autocomplete="off" placeholder="oomizu3/koseiyuki-auto">
+    <div class="row" style="margin-top:8px">
+      <button class="pri" id="setSave">保存する</button>
+      <button id="setTest">つながるか確かめる</button>
+    </div>
+    <p class="note" id="setNote"></p>
+    <p class="note">トークンはこのスマホのブラウザの中だけに保存します。</p>
+  </div>
+
+  <div class="card">
+    <h3>文字の大きさ</h3>
+    <div class="row">
+      <button class="fsset" data-k="0">標準</button>
+      <button class="fsset" data-k="1">大きめ</button>
+      <button class="fsset" data-k="2">特大</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>環境チェック</h3>
+    <button id="setDoctor" style="width:100%">環境チェック（doctor）を動かす</button>
+  </div>
+
+  <details class="card">
+    <summary>その他のコマンド</summary>
+    <p class="note">kpipe の後ろに付ける引数をそのまま入れます。先頭の語は blog senior thumb script retouch engine wanderer-ep kozakura-ep benson-ep wanderer kozakura benson family doctor のどれか。空白を含む語は "…" で囲みます。</p>
+    <label class="f" for="setCmd">引数</label>
+    <textarea id="setCmd" rows="3" placeholder='例：engine reset --channel senior --job 155 --from images'></textarea>
+    <label class="f" for="setCmdPrev">あとで見るもの</label>
+    <select id="setCmdPrev"><option value="">なし</option><option value="video">動画（final.mp4）</option></select>
+    <label class="chk"><input type="checkbox" id="setCmdMotion">章画像をゆっくり寄せる（motion=zoom）</label>
+    <button id="setCmdRun" class="pri" style="width:100%">実行する</button>
+  </details>
+
+  <div class="card">
+    <h3>そのほか</h3>
+    <div class="stack">
+      <button id="setCacheClear">読み込んだデータの控えを消す</button>
+    </div>
+    <p class="note">重い処理はすべて GitHub Actions（workflow kpipe-remote.yml）が行います。このアプリは頼んで、結果を読むだけです。</p>
+  </div>
+</section>
+</main>
+
+<nav class="bottom" id="nav">
+  <button data-tab="blog" class="on"><span class="ic">✎</span>ブログ</button>
+  <button data-tab="senior"><span class="ic">◐</span>シニア</button>
+  <button data-tab="retouch"><span class="ic">✂</span>手直し</button>
+  <button data-tab="family"><span class="ic">❀</span>紙芝居</button>
+  <button data-tab="status"><span class="ic">◷</span><span>状況 <span class="badge hidden" id="navBadge"></span></span></button>
+  <button data-tab="settings"><span class="ic">⚙</span>設定</button>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================ 基本 */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const P = "kpipe.";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(P + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(P + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(P + k); } catch (e) {} },
+};
+let toastTimer = null;
+function toast(msg, ms) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.display = "none"; }, ms || 3500);
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+const ALLOWED_HEADS = ["blog","senior","thumb","script","retouch","engine","wanderer-ep","kozakura-ep","benson-ep","wanderer","kozakura","benson","family","doctor"];
+const ENGINE_ORDER = ["script_prep","quota","tts","chapters_check","images","thumbnail","subtitles","compose","upload","archive"];
+const RESET_STEP = {rebuild:"compose", verify:"compose", engine:"script_prep", build:"script_prep"};
+const STEP_HINTS = {
+  script_prep: "台本の形の問題（読み注記 [[…|…]] の閉じ忘れなど）。台本の欄で直して「台本を保存」してから再開。",
+  quota: "ElevenLabs の残量不足。ログのリセット日時まで待つか、台本を短くして保存し直す。",
+  tts: "ElevenLabs の音声生成の失敗（通信・一部パートの失敗）。「同じ操作をもう一度」で成功済みのパートは飛ばして打ち直す。",
+  chapters_check: "章見出しが音声の本文とずれている。「台本を保存」で章を合わせ直すか、この工程から作り直す。",
+  images: "章画像の生成に失敗。「同じ操作をもう一度」で欠けた分だけ作る。続くなら OpenAI の鍵・残高を確認。",
+  thumbnail: "サムネの生成に失敗。「同じ操作をもう一度」。文言を変えるなら直しの指示かサムネ別案で。",
+  subtitles: "字幕の生成に失敗。「同じ操作をもう一度」。続くならこの工程から作り直す。",
+  compose: "動画の合成（ffmpeg）に失敗。「同じ操作をもう一度」。字幕同期が FAIL のときはこの工程から作り直す。",
+  rebuild: "映像尺と音声尺が合わない。compose から作り直す。続くなら音声（tts）から作り直す。",
+  verify: "字幕の同期検証で FAIL。字幕（subtitles）から作り直す。",
+  upload: "YouTube への投稿に失敗（認証・通信）。動画はできているので、原因を直して「同じ操作をもう一度」（作り直しはしない）。",
+  archive: "WordPress への保管に失敗。「同じ操作をもう一度」（投稿済みの動画はそのまま）。",
+  script: "台本が機械点検を通らない。結果の点検内容を読み、台本の欄で直して保存するか、直しの指示を出す。",
+  chapters: "章立てを作れない。台本を直して保存すると章立ても合わせ直す。",
+  duplicate: "配信済みの記事。作り直すときは PC 版で環境変数 KPIPE_ALLOW_DUPLICATE=1 を付けて。",
+  fetch: "記事本文を取得できない。URL を確認。",
+};
+const SERIALS = {
+  wanderer: {name:"放浪者", series:"霊界の放浪者", cmd:"wanderer-ep"},
+  kozakura: {name:"小桜姫", series:"戦国の姫が見たあの世", cmd:"kozakura-ep"},
+  benson:   {name:"ベンソン", series:"司祭が見たあの世", cmd:"benson-ep"},
+};
+const BRANCH = "kpipe-remote";
+const WORKFLOW = "kpipe-remote.yml";
+
+/* ============================================================ 設定 */
+function token() { return store.get("token", ""); }
+function repo() { return store.get("repo", "") || "oomizu3/koseiyuki-auto"; }
+
+/* ============================================================ 文字の大きさ */
+const FS_LEVELS = [[17, 18], [19, 21], [21, 24]];
+function applyFs() {
+  const k = Math.max(0, Math.min(2, store.get("fs", 0)));
+  const extra = store.get("scriptExtra", 0);
+  document.documentElement.style.setProperty("--fs", FS_LEVELS[k][0] + "px");
+  document.documentElement.style.setProperty("--script-fs", Math.max(15, Math.min(32, FS_LEVELS[k][1] + extra)) + "px");
+  document.querySelectorAll(".fsset").forEach(b => b.classList.toggle("pri", Number(b.dataset.k) === k));
+}
+
+/* ============================================================ GitHub API */
+class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+async function gh(path, opts) {
+  opts = opts || {};
+  if (!token()) throw new ApiError(0, "トークンが未設定です。「設定」でトークンを貼ってください。");
+  const url = path.startsWith("http") ? path : "https://api.github.com" + path;
+  const headers = {
+    "Authorization": "Bearer " + token(),
+    "Accept": opts.raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (opts.body) headers["Content-Type"] = "application/json";
+  let res;
+  try {
+    res = await fetch(url, {method: opts.method || "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined, cache: "no-store"});
+  } catch (e) {
+    throw new ApiError(-1, "通信できませんでした（電波・接続を確かめてください）");
+  }
+  if (res.status === 204) return null;
+  if (!res.ok) {
+    let msg = "";
+    try { const j = await res.json(); msg = j.message || ""; } catch (e) {}
+    const human = {
+      401: "トークンが正しくないか、期限が切れています（設定で貼り直してください）",
+      403: "権限が足りないか、回数の上限に達しました",
+      404: "見つかりません",
+      409: "ぶつかりました（もう一度試してください）",
+      422: "受け付けられない内容です",
+    }[res.status] || ("GitHub がエラーを返しました（" + res.status + "）");
+    throw new ApiError(res.status, human + (msg ? "：" + msg : ""));
+  }
+  if (opts.raw) return await res.text();
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("json") ? await res.json() : await res.text();
+}
+function encPath(p) { return p.split("/").map(encodeURIComponent).join("/"); }
+function b64utf8(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/* 読むだけ（main）。短時間の控えを持つ */
+const cache = new Map();
+const CACHE_MS = 90 * 1000;
+function cacheClear(prefix) { for (const k of Array.from(cache.keys())) if (!prefix || k.includes(prefix)) cache.delete(k); }
+async function readText(path, ref) {
+  const key = "t:" + (ref || "main") + ":" + path;
+  const c = cache.get(key);
+  if (c && Date.now() - c.at < CACHE_MS) return c.v;
+  const v = await gh(`/repos/${repo()}/contents/${encPath(path)}?ref=${encodeURIComponent(ref || "main")}`, {raw: true});
+  cache.set(key, {at: Date.now(), v});
+  return v;
+}
+async function readTextOr(path, dflt) {
+  try { return await readText(path); } catch (e) { if (e.status === 404) return dflt; throw e; }
+}
+async function readJsonOr(path, dflt) {
+  const t = await readTextOr(path, null);
+  if (t == null) return dflt;
+  try { return JSON.parse(t.replace(/^﻿/, "")); } catch (e) { return dflt; }
+}
+async function listDir(path) {
+  const key = "d:" + path;
+  const c = cache.get(key);
+  if (c && Date.now() - c.at < CACHE_MS) return c.v;
+  const v = await gh(`/repos/${repo()}/contents/${encPath(path)}?ref=main`);
+  cache.set(key, {at: Date.now(), v});
+  return Array.isArray(v) ? v : [];
+}
+
+/* CSV（BOM付き UTF-8、引用符あり） */
+function parseCsv(text) {
+  text = text.replace(/^﻿/, "");
+  const rows = []; let row = []; let f = ""; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(f); f = ""; rows.push(row); row = [];
+    } else f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  const head = rows.shift() || [];
+  return rows.filter(r => r.some(x => x !== "")).map(r => { const o = {}; head.forEach((h, i) => o[h] = r[i] == null ? "" : r[i]); return o; });
+}
+
+/* ============================================================ 要求（dispatch） */
+function jstNow() { return new Date(Date.now() + 9 * 3600 * 1000); }
+function pad(n) { return String(n).padStart(2, "0"); }
+function jstDay(offset) {
+  const d = jstNow(); d.setUTCDate(d.getUTCDate() + (offset || 0));
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+function newReq() {
+  const d = jstNow();
+  const r = Array.from(crypto.getRandomValues(new Uint8Array(2))).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}-${r}`;
+}
+let branchReady = false;
+async function ensureBranch() {
+  if (branchReady) return;
+  try {
+    await gh(`/repos/${repo()}/git/ref/heads/${BRANCH}`);
+  } catch (e) {
+    if (e.status !== 404) throw e;
+    const main = await gh(`/repos/${repo()}/git/ref/heads/main`);
+    try {
+      await gh(`/repos/${repo()}/git/refs`, {method: "POST", body: {ref: "refs/heads/" + BRANCH, sha: main.object.sha}});
+    } catch (e2) { if (e2.status !== 422) throw e2; }   // 同時に作られていたら 422（あるので良し）
+  }
+  branchReady = true;
+}
+async function putInbox(req, text) {
+  await ensureBranch();
+  await gh(`/repos/${repo()}/contents/inbox/${encodeURIComponent(req)}.txt`, {method: "PUT", body: {
+    message: `kpipe remote inbox ${req}`, branch: BRANCH,
+    content: b64utf8(text.endsWith("\n") ? text : text + "\n"),
+  }});
+}
+
+/* 履歴（最新50件） */
+let hist = store.get("history", []);
+function saveHist() {
+  hist = hist.slice(0, 50);
+  if (!store.set("history", hist)) {
+    // 入りきらなければ古い結果の控えから削る
+    hist.forEach((h, i) => { if (i > 10) { delete h.jsonData; } });
+    store.set("history", hist);
+  }
+  renderBadge();
+}
+function findHist(req) { return hist.find(h => h.req === req); }
+
+/**
+ * kpipe を Actions で動かす。
+ * spec: {label, argv, preview?, motion?, input?, after?, ctx?, confirm?}
+ */
+async function runRemote(spec) {
+  if (!token()) { toast("先に「設定」でトークンを貼ってください"); showTab("settings"); return null; }
+  if (spec.confirm && !confirm(spec.confirm)) return null;
+  const argv = spec.argv.map(String);
+  if (!ALLOWED_HEADS.includes(argv[0])) { alert("この操作は使えません：" + argv[0]); return null; }
+  if (argv[0] === "family" && argv[1] === "auth") { alert("family auth はスマホからは使えません（PC 版で）"); return null; }
+  const req = newReq();
+  const entry = {
+    req, label: spec.label, argv, preview: spec.preview || [], motion: spec.motion ? "zoom" : "",
+    hasInput: spec.input != null, after: spec.after || "", ctx: spec.ctx || {},
+    created: Date.now(), state: "sending", runStatus: "", runUrl: "", result: null, applied: false, misses: 0,
+  };
+  hist.unshift(entry); saveHist(); renderStatusList();
+  try {
+    if (spec.input != null) await putInbox(req, spec.input);
+    await gh(`/repos/${repo()}/actions/workflows/${WORKFLOW}/dispatches`, {method: "POST", body: {
+      ref: "main",
+      inputs: {req, label: spec.label, argv: JSON.stringify(argv), preview: JSON.stringify(entry.preview), motion: entry.motion},
+    }});
+    entry.state = "sent";
+    toast(`「${spec.label}」を頼みました。結果は「状況」で見られます（1〜2分で動き出します）`, 4500);
+  } catch (e) {
+    entry.state = "error";
+    entry.error = e.status === 404 && !spec.input ? "workflow kpipe-remote.yml が見つかりません（main にまだ無いか、トークンの権限不足）。" + e.message : e.message;
+    toast("頼めませんでした：" + entry.error, 6000);
+  }
+  saveHist(); renderStatusList(); updateActiveInfo();
+  if (entry.state === "sent") schedulePoll(15000);
+  return entry;
+}
+
+/* ============================================================ 進み具合の追跡 */
+let pollTimer = null, polling = false;
+function isActive(h) { return h.state === "sent" || h.state === "running"; }
+function schedulePoll(ms) { clearTimeout(pollTimer); pollTimer = setTimeout(pollOnce, ms == null ? 10000 : ms); }
+async function pollOnce() {
+  if (polling) return;
+  const active = hist.filter(isActive);
+  if (!active.length || !token()) { updateActiveInfo(); return; }
+  if (document.visibilityState === "hidden") { schedulePoll(10000); return; }
+  polling = true;
+  try {
+    let runs = [];
+    try {
+      const r = await gh(`/repos/${repo()}/actions/workflows/${WORKFLOW}/runs?per_page=20`);
+      runs = (r && r.workflow_runs) || [];
+    } catch (e) { /* 一覧が取れなくても結果ファイルは見る */ }
+    for (const h of active) {
+      const run = runs.find(x => String(x.display_title || x.name || "").includes(h.req));
+      if (run) {
+        h.runStatus = run.status; h.runConclusion = run.conclusion || ""; h.runUrl = run.html_url;
+        if (run.status !== "completed") h.state = "running";
+      }
+      let res = null;
+      try {
+        const t = await gh(`/repos/${repo()}/contents/results/${encodeURIComponent(h.req)}.json?ref=${BRANCH}`, {raw: true});
+        res = JSON.parse(t);
+      } catch (e) { res = null; }
+      if (res) {
+        finishWith(h, res);
+      } else if (run && run.status === "completed") {
+        h.misses = (h.misses || 0) + 1;
+        if (h.misses >= 4) {
+          h.state = "done";
+          h.result = {rc: -1, ok: false, message: `Actions は「${conclusionJa(run.conclusion)}」で終わりましたが、結果ファイルがありません。Actions の画面で確かめてください。`};
+        }
+      } else if (Date.now() - h.created > 6 * 3600 * 1000) {
+        h.state = "done";
+        h.result = {rc: -1, ok: false, message: "6時間たっても結果が来ないので、追うのをやめました。Actions の画面で確かめてください。"};
+      }
+    }
+    saveHist();
+  } finally {
+    polling = false;
+  }
+  renderStatusList(); updateActiveInfo();
+  if (curDetail) renderDetail(curDetail, true);
+  if (hist.some(isActive)) schedulePoll(10000);
+}
+function conclusionJa(c) {
+  return {success: "成功", failure: "失敗", cancelled: "中止", timed_out: "時間切れ", skipped: "飛ばし", startup_failure: "起動失敗"}[c] || (c || "不明");
+}
+const fullResults = new Map();   // req → 結果の全文（output を含む）。画面を開いている間だけ
+function finishWith(h, res) {
+  fullResults.set(h.req, res);
+  h.state = "done";
+  h.result = {rc: res.rc, ok: !!res.ok, message: res.message || "", commit: res.commit || null, run_url: res.run_url || "",
+              work_key: res.work_key || "", work_present: res.work_present, finished: res.finished || "",
+              previews: res.previews || [], step: parseError(res.output || "").step,
+              tail: String(res.output || "").slice(-1500), job: jobFromOutput(res.output || "")};
+  if (res.run_url && !h.runUrl) h.runUrl = res.run_url;
+  if (res.json != null) { try { const s = JSON.stringify(res.json); if (s.length < 60000) h.jsonData = res.json; } catch (e) {} }
+  if (res.commit) cacheClear();   // main が変わった
+  if (!h.applied) {
+    h.applied = true;
+    try { applyAfter(h, res); } catch (e) { console.error(e); }
+  }
+  toast(`${res.ok ? "終わりました" : "止まりました"}：${h.label}`, 4000);
+}
+async function fetchResult(h) {
+  if (fullResults.has(h.req)) return fullResults.get(h.req);
+  const t = await gh(`/repos/${repo()}/contents/results/${encodeURIComponent(h.req)}.json?ref=${BRANCH}`, {raw: true});
+  const res = JSON.parse(t);
+  fullResults.set(h.req, res);
+  return res;
+}
+function updateActiveInfo() {
+  const n = hist.filter(isActive).length;
+  $("activeInfo").textContent = n ? `動いている要求 ${n} 件` : "";
+  renderBadge();
+}
+function renderBadge() {
+  const n = hist.filter(isActive).length;
+  const b = $("navBadge");
+  b.textContent = n; b.classList.toggle("hidden", !n);
+}
+
+function parseError(text) {
+  let step = "", code = "", msg = "";
+  const re = /\[kpipe\] 工程 (\S+) で停止: ([\s\S]*?) \(code=(\d+)\)/g;
+  let m;
+  while ((m = re.exec(text))) { step = m[1]; msg = m[2].trim(); code = m[3]; }
+  if (!msg) {
+    const m2 = /\[kpipe\] 予期しないエラー: (.*)/.exec(text);
+    if (m2) { msg = m2[1].trim(); step = step || "engine"; }
+  }
+  return {step: step.replace(/\?/g, ""), code, msg: msg.slice(0, 1500)};
+}
+function jobFromOutput(text) { const m = /job=(\S+) bundle=/.exec(text || ""); return m ? m[1] : ""; }
+
+/* ============================================================ 結果が来たときの後始末 */
+function applyAfter(h, res) {
+  const ok = res.rc === 0;
+  const out = res.output || "";
+  switch (h.after) {
+    case "blogDraft": {
+      const job = jobFromOutput(out);
+      if (job) { h.ctx.job = h.ctx.job || job; $("blogJob").value = job; store.set("blogJob", job); blogLoad(true); }
+      break;
+    }
+    case "blogReload":
+      if (h.ctx.isSave && !ok) { blogEd.saved = ""; blogEd.mark(); toast("台本の保存で止まりました。欄の文字はそのまま残しています（状況の画面で理由を確かめてください）", 6000); break; }
+      if (h.ctx.job && h.ctx.job === blog.job) blogLoad(true);
+      if (h.ctx.clearInst && ok) $("blogInst").value = "";
+      break;
+    case "backlog":
+      backlogRows = null; if ($("backlogBox").open) backlogRefresh(true);
+      break;
+    case "seniorFind": {
+      const m = /No\.(\d+)「/.exec(out);
+      if (m) { $("srNo").value = m[1]; srLoadNumber(true); }
+      else { const lines = out.split("\n").filter(l => l.startsWith("[senior]")); if (lines.length) $("srDayNote").textContent = lines.slice(-3).join("\n"); }
+      break;
+    }
+    case "seniorReload":
+    case "serialReload":
+      if (h.ctx.isSave && !ok) { srEd.saved = ""; srEd.mark(); toast("台本の保存で止まりました。欄の文字はそのまま残しています（状況の画面で理由を確かめてください）", 6000); break; }
+      if (h.ctx.clearInst && ok) $("srInst").value = "";
+      srReloadCurrent(true);
+      break;
+    case "chapters":
+      if (rtSame(h.ctx) && Array.isArray(res.json)) { rt.chapters = res.json; rtSave(); rtRenderChapters(); }
+      if (h.ctx.index && rtSame(h.ctx)) {
+        const pv = (res.previews || []).find(p => p.url);
+        if (pv) { rt.chapPrev[h.ctx.index] = pv.url; rtSave(); rtRenderChapters(); }
+        else if ((res.previews || []).length) { rt.chapPrevErr[h.ctx.index] = res.previews[0].error || "画像を取り出せませんでした"; rtRenderChapters(); }
+      }
+      break;
+    case "chapterImage":
+      if (rtSame(h.ctx)) {
+        const pv = (res.previews || []).find(p => p.url);
+        if (pv) rt.chapPrev[h.ctx.index] = pv.url;
+        rtSave(); rtRenderChapters();
+      }
+      break;
+    case "reading":
+      if (ok && rtSame(h.ctx)) { $("rtWord").value = ""; $("rtReading").value = ""; }
+      if (h.ctx.kind === "blog") blogLoad(true); else srReloadCurrent(true);
+      break;
+    case "parts":
+      if (rtSame(h.ctx) && Array.isArray(res.json)) { rt.parts = res.json; rtSave(); rtRenderParts(); }
+      if (h.ctx.part && rtSame(h.ctx)) {
+        const pv = (res.previews || []).find(p => p.url);
+        if (h.ctx.take) { if (pv) rt.takePrev[h.ctx.part + ":" + h.ctx.take] = pv.url; }
+        else if (pv) rt.partPrev[h.ctx.part] = pv.url;
+        rtSave(); rtRenderPartDetail();
+      }
+      break;
+    case "find":
+      if (rtSame(h.ctx) && res.json && res.json.part) {
+        rt.sel = res.json.part; rtSave(); rtRenderParts();
+        $("rtPartNote").textContent = `パート ${res.json.part}（${res.json.time || ""}）です。「聴く」で確かめてから録り直してください。`
+          + (res.json.others && res.json.others.length ? `　同じ言葉はパート ${res.json.others.join(", ")} にもあります。` : "");
+      } else if (rtSame(h.ctx)) {
+        $("rtPartNote").textContent = "見つかりませんでした。" + (parseError(out).msg || "");
+      }
+      break;
+    case "partChanged":
+      if (rtSame(h.ctx)) {
+        const pv = (res.previews || []).find(p => p.url);
+        if (pv) rt.partPrev[h.ctx.part] = pv.url;
+        rt.partsStale = true; rtSave(); rtRenderParts();
+        $("rtPartNote").textContent = ok ? `パート ${h.ctx.part} を作り直しました。「聴く」で確かめ、良ければ「反映して動画を作り直す」。（パートの一覧は取り直すと最新になります）`
+                                         : `パート ${h.ctx.part} の作業に失敗しました（状況の画面で確かめてください）。`;
+        if (ok && h.ctx.speech) { if (h.ctx.kind === "blog") blogLoad(true); else srReloadCurrent(true); }
+      }
+      break;
+    case "rebuild":
+      if (rtSame(h.ctx)) {
+        const pv = (res.previews || []).find(p => p.kind === "video" && p.url);
+        if (pv) { rt.videoPrev = pv.url; rtSave(); rtRenderVideo(); }
+      }
+      break;
+    case "family":
+      if (h.ctx.list && Array.isArray(res.json)) { store.set("familyWorks", res.json); fmRenderWorks(); }
+      break;
+  }
+}
+
+/* ============================================================ 画面の切り替え */
+function showTab(name) {
+  document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + name));
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  store.set("tab", name);
+  window.scrollTo(0, 0);
+  if (name === "status") { if (!curDetail) renderStatusList(); pollOnce(); }
+  if (name === "senior" && !srDatesBuilt) srBuildDates();
+  if (name === "blog" && !blogJobsLoaded) blogJobsRefresh(false);
+}
+document.querySelectorAll("#nav button").forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.tab === "status") { curDetail = null; $("stDetailView").classList.add("hidden"); $("stListView").classList.remove("hidden"); }
+  showTab(b.dataset.tab);
+}));
+
+/* ============================================================ 台本欄（共通） */
+function makeEditor(id, dirtyId) {
+  const ed = {el: $(id), dirtyEl: $(dirtyId), saved: ""};
+  ed.set = (text) => { ed.el.value = text || ""; ed.saved = ed.el.value; ed.mark(); };
+  ed.text = () => ed.el.value.replace(/\r\n/g, "\n");
+  ed.dirty = () => ed.text().trim() !== (ed.saved || "").trim();
+  ed.mark = () => { ed.dirtyEl.textContent = ed.dirty() ? "● 保存していない編集があります（「台本を保存」で反映）" : ""; };
+  ed.el.addEventListener("input", ed.mark);
+  return ed;
+}
+function okToProceed(ed) {
+  if (!ed.dirty()) return true;
+  return confirm("台本の欄に保存していない編集があります。\n\n保存せずに（保存済みの台本で）進めますか？\n\n先に「台本を保存」するなら「キャンセル」を押し、保存が終わってからもう一度押してください。");
+}
+document.querySelectorAll(".fsminus").forEach(b => b.addEventListener("click", () => { store.set("scriptExtra", store.get("scriptExtra", 0) - 2); applyFs(); }));
+document.querySelectorAll(".fsplus").forEach(b => b.addEventListener("click", () => { store.set("scriptExtra", store.get("scriptExtra", 0) + 2); applyFs(); }));
+window.addEventListener("beforeunload", (e) => { if (blogEd.dirty() || srEd.dirty()) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ============================================================ ブログ */
+const blog = {job: ""};
+const blogEd = makeEditor("blogScript", "blogDirty");
+let blogJobsLoaded = false;
+function blogOpts() {
+  const o = [];
+  if ($("optNoShorts").checked) o.push("--no-shorts");
+  if ($("optNoPod").checked) o.push("--no-podcast");
+  if ($("optNoIg").checked) o.push("--no-instagram");
+  return o;
+}
+function blogUrl() {
+  const url = $("blogUrl").value.trim();
+  if (!/^https?:\/\/(www\.)?spacebrothers\.jp\//.test(url)) { alert("spacebrothers.jp の記事URLを入れてください。"); return ""; }
+  return url;
+}
+$("blogStart").addEventListener("click", () => {
+  const url = blogUrl(); if (!url) return;
+  const args = ["blog", "run", "--url", url, ...blogOpts()];
+  if ($("optApprove").checked) {
+    args.push("--approve");
+    runRemote({label: "台本を作成", argv: args, after: "blogDraft", ctx: {kind: "blog", channel: "spacebrothers"}});
+  } else {
+    runRemote({label: "動画化（一気通貫）", argv: args, after: "blogDraft", ctx: {kind: "blog", channel: "spacebrothers"},
+      confirm: "台本の確認なしで、YouTube 公開・Shorts 予約・Instagram・ポッドキャスト配信まで一気に進めます。\n取り消せません。よろしいですか？"});
+  }
+});
+$("blogDry").addEventListener("click", () => {
+  const url = blogUrl(); if (!url) return;
+  runRemote({label: "台本だけ作成", argv: ["blog", "run", "--url", url, "--dry-run"], after: "blogDraft", ctx: {kind: "blog", channel: "spacebrothers"}});
+});
+async function blogJobsRefresh(force) {
+  if (!token()) return;
+  if (force) cacheClear("podcast/jobs");
+  const sel = $("blogJobSel");
+  try {
+    const items = await listDir("podcast/jobs");
+    const names = items.filter(x => x.type === "dir").map(x => x.name).sort().reverse();
+    sel.innerHTML = `<option value="">（選んでください・${names.length}件）</option>` + names.map(n => `<option>${esc(n)}</option>`).join("");
+    blogJobsLoaded = true;
+  } catch (e) { sel.innerHTML = `<option value="">読めませんでした：${esc(e.message)}</option>`; }
+}
+$("blogJobsRefresh").addEventListener("click", () => blogJobsRefresh(true));
+$("blogJobSel").addEventListener("change", () => { if ($("blogJobSel").value) { $("blogJob").value = $("blogJobSel").value; blogLoad(); } });
+$("blogLoad").addEventListener("click", () => blogLoad());
+$("blogReloadScript").addEventListener("click", () => { if (!blogEd.dirty() || confirm("編集を捨てて、保存済みの台本を読み直しますか？")) blogLoad(true, true); });
+async function blogLoad(fresh, force) {
+  const job = $("blogJob").value.trim();
+  if (!job) { toast("job を入れてください"); return; }
+  if (!force && blogEd.dirty() && job === blog.job && fresh) { toast("台本の欄に未保存の編集があるので、読み直しはしませんでした"); return; }
+  if (!force && blogEd.dirty() && job !== blog.job && !confirm("台本の欄の未保存の編集を捨てて、別の job を読み込みますか？")) return;
+  const d = "podcast/jobs/" + job;
+  if (fresh) cacheClear(d);
+  $("blogHead").textContent = "読み込み中…";
+  try {
+    const [script, meta, sh, res] = await Promise.all([
+      readTextOr(d + "/script.txt", null), readJsonOr(d + "/meta.json", {}), readJsonOr(d + "/shorts.json", {}), readJsonOr(d + "/result.json", {})]);
+    if (script == null) { $("blogHead").textContent = `${job} の script.txt が main にありません。`; return; }
+    blog.job = job; store.set("blogJob", job);
+    $("blogHead").textContent = `【YouTubeタイトル】${meta.title || ""}\n【Shorts フック】${sh.hook || ""}`;
+    blogEd.set(script);
+    $("blogResult").innerHTML = res.video_url
+      ? `投稿済み：<a href="${esc(res.video_url)}" target="_blank" rel="noopener">${esc(res.video_url)}</a>` + (res.shorts_url ? `<br>Shorts：${esc(res.shorts_url)}` : "") + (res.instagram_permalink ? `<br>Instagram：${esc(res.instagram_permalink)}` : "")
+      : "未投稿（台本を読んで OK か直しを）";
+  } catch (e) { $("blogHead").textContent = "読めませんでした：" + e.message; }
+}
+function needBlogJob() {
+  const job = $("blogJob").value.trim();
+  if (!job || job !== blog.job) { alert("先に job を読み込んでください。"); return ""; }
+  return job;
+}
+$("blogSave").addEventListener("click", () => {
+  const job = needBlogJob(); if (!job) return;
+  const text = blogEd.text();
+  if (!text.trim()) { alert("台本が空です。"); return; }
+  runRemote({label: "台本を保存", argv: ["script", "apply", "--channel", "spacebrothers", "--job", job, "--file", "{INPUT}"],
+    input: text, after: "blogReload", ctx: {kind: "blog", channel: "spacebrothers", job, isSave: true}}).then(e => { if (e && e.state === "sent") { blogEd.saved = text; blogEd.mark(); } });
+});
+$("blogRevise").addEventListener("click", () => {
+  const job = needBlogJob(); if (!job) return;
+  const inst = $("blogInst").value.trim();
+  if (!inst) { alert("直しの指示を入れてください。"); return; }
+  if (!okToProceed(blogEd)) return;
+  runRemote({label: "台本の直し", argv: ["blog", "revise", "--job", job, "--instruction", inst], after: "blogReload", ctx: {kind: "blog", channel: "spacebrothers", job, clearInst: true}});
+});
+$("blogPreview").addEventListener("click", () => {
+  const job = needBlogJob(); if (!job) return;
+  if (!okToProceed(blogEd)) return;
+  runRemote({label: "動画だけ作成（投稿しない）", argv: ["engine", "build", "--channel", "spacebrothers", "--job", job, "--until", "compose"], preview: ["video"],
+    after: "rebuild", ctx: {kind: "blog", channel: "spacebrothers", job},
+    confirm: "この台本で音声・画像・字幕・動画まで作ります（投稿はしない）。\n音声（ElevenLabs）と画像（OpenAI）の費用はかかります。よろしいですか？"});
+});
+$("blogBuild").addEventListener("click", () => {
+  const job = needBlogJob(); if (!job) return;
+  if (!okToProceed(blogEd)) return;
+  runRemote({label: "動画化・投稿", argv: ["blog", "build", "--job", job, ...blogOpts()], after: "blogReload", ctx: {kind: "blog", channel: "spacebrothers", job},
+    confirm: "この台本で動画を作り、YouTube 公開・Shorts 予約・Instagram・ポッドキャスト配信まで進めます。\n取り消せません。よろしいですか？"});
+});
+$("blogRetouch").addEventListener("click", () => {
+  const job = needBlogJob(); if (!job) return;
+  if (!okToProceed(blogEd)) return;
+  rtOpen({kind: "blog", channel: "spacebrothers", job, title: $("blogHead").textContent.split("\n")[0].replace("【YouTubeタイトル】", ""),
+    rebuild: {argv: ["engine", "build", "--channel", "spacebrothers", "--job", job, "--until", "compose"]}});
+});
+
+/* ---------- 過去記事の台帳 */
+let backlogRows = null, backlogShown = 40;
+async function backlogLoad(force) {
+  if (backlogRows && !force) return backlogRows;
+  if (force) cacheClear("backlog_queue");
+  $("blCount").textContent = "台帳を読み込み中…（140KB ほど）";
+  const t = await readText("podcast/backlog_queue.csv");
+  backlogRows = parseCsv(t);
+  const cats = Array.from(new Set(backlogRows.map(r => r["区分"]).filter(Boolean)));
+  const cur = $("blCat").value;
+  $("blCat").innerHTML = `<option value="すべて">すべて</option>` + cats.map(c => `<option${c === cur ? " selected" : ""}>${esc(c)}</option>`).join("");
+  return backlogRows;
+}
+async function backlogRefresh(force) {
+  try { await backlogLoad(force); } catch (e) { $("blCount").textContent = "台帳を読めません：" + e.message; return; }
+  const cat = $("blCat").value, st = $("blStatus").value, sort = $("blSort").value, desc = $("blDesc").checked;
+  const qs = $("blQuery").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const OPEN = ["未処理", "要確認", "作成中"];
+  let rows = backlogRows.filter(r => {
+    if (cat && cat !== "すべて" && r["区分"] !== cat) return false;
+    const s = r["ステータス"] || "";
+    if (st === "未完了") { if (!OPEN.includes(s)) return false; }
+    else if (st && st !== "すべて" && s !== st) return false;
+    if (qs.length) {
+      const hay = [r["記事タイトル"], r["ラベル"], r["記事URL"], r["備考"]].join(" ").toLowerCase();
+      if (!qs.every(q => hay.includes(q))) return false;
+    }
+    return true;
+  });
+  const num = (v) => { const n = Number(String(v || "").replace(/,/g, "")); return isNaN(n) ? -1 : n; };
+  rows.sort((a, b) => {
+    let x, y;
+    if (sort === "記事公開日") { x = a[sort] || ""; y = b[sort] || ""; return (x < y ? -1 : x > y ? 1 : 0) * (desc ? -1 : 1); }
+    x = num(a[sort]); y = num(b[sort]); return (x - y) * (desc ? -1 : 1);
+  });
+  $("blCount").textContent = `${rows.length}件`;
+  backlogFiltered = rows;
+  backlogShown = 40;
+  backlogRender();
+}
+let backlogFiltered = [];
+function backlogRender() {
+  const rows = backlogFiltered.slice(0, backlogShown);
+  $("blList").innerHTML = rows.map((r, i) => {
+    const imp = r["検索表示回数_12か月"];
+    return `<div class="item">
+      <div class="t">${esc(r["記事タイトル"])}</div>
+      <div class="meta"><span class="tag">${esc(r["ステータス"])}</span>No.${esc(r["番号"])}｜${esc(r["区分"])}｜検索表示 ${esc(/^\d+$/.test(imp) ? Number(imp).toLocaleString() : imp)}｜${esc(r["本文字数"])}字｜${esc(r["記事公開日"])}</div>
+      ${r["近い既存動画"] ? `<div class="meta">近い既存動画：${esc(r["近い既存動画"])}</div>` : ""}
+      ${r["備考"] ? `<div class="meta">備考：${esc(r["備考"])}</div>` : ""}
+      <div class="row" style="margin-top:6px">
+        <button class="small pri" data-bl="use" data-i="${i}">URL 欄に入れる</button>
+        <a class="btn small" href="${esc(r["記事URL"])}" target="_blank" rel="noopener" style="min-height:44px;font-size:15px">記事を開く</a>
+        <button class="small" data-bl="skip" data-i="${i}">見送りにする</button>
+        <button class="small" data-bl="back" data-i="${i}">未処理に戻す</button>
+      </div></div>`;
+  }).join("");
+  $("blMore").classList.toggle("hidden", backlogFiltered.length <= backlogShown);
+}
+$("blList").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-bl]"); if (!b) return;
+  const r = backlogFiltered[Number(b.dataset.i)]; if (!r) return;
+  if (b.dataset.bl === "use") {
+    if (r["ステータス"] === "公開済み" && !confirm("この記事は公開済みです。それでも URL 欄に入れますか？")) return;
+    if (r["ステータス"] === "要確認" && !confirm(`既存の動画と題材が近い記事です。\n近い既存動画：${r["近い既存動画"] || "（題の近さで判定）"}\n\n切り口を変える前提で URL 欄に入れますか？`)) return;
+    $("blogUrl").value = r["記事URL"];
+    $("blogUrlNote").textContent = `台帳から選択：${r["区分"]}｜${r["記事タイトル"]}（「動画化を始める」で台本を作ると台帳は「作成中」、投稿すると「公開済み」になる）`;
+    $("backlogBox").open = false;
+    window.scrollTo({top: 0, behavior: "smooth"});
+    return;
+  }
+  const status = b.dataset.bl === "skip" ? "見送り" : "未処理";
+  runRemote({label: `台帳を「${status}」に`, argv: ["blog", "backlog", "mark", "--url", r["記事URL"], "--status", status], after: "backlog",
+    confirm: `「${r["記事タイトル"]}」を「${status}」にします。よろしいですか？`});
+});
+$("blMore").addEventListener("click", () => { backlogShown += 40; backlogRender(); });
+$("blRefresh").addEventListener("click", () => backlogRefresh(false));
+$("blReload").addEventListener("click", () => backlogRefresh(true));
+$("blQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") backlogRefresh(false); });
+["blCat", "blStatus", "blSort", "blDesc"].forEach(id => $(id).addEventListener("change", () => backlogRefresh(false)));
+$("backlogBox").addEventListener("toggle", () => { if ($("backlogBox").open && !backlogRows) backlogRefresh(false); });
+
+/* ============================================================ シニア */
+const srEd = makeEditor("srScript", "srDirty");
+const sr = {no: "", serial: null};   // serial: {key, ep, compilation, day}
+let srDatesBuilt = false;
+let srSched = {}, srPlan = [];
+async function srLoadSchedules(force) {
+  if (force) { cacheClear("schedule.json"); cacheClear("run_plan"); }
+  const out = {};
+  await Promise.all(Object.keys(SERIALS).map(async k => { out[k] = await readJsonOr(`senior/${k}/schedule.json`, {}); }));
+  srSched = out;
+  try { srPlan = parseCsv(await readTextOr("senior/run_plan.csv", "")); } catch (e) { srPlan = []; }
+}
+function isCompRow(e) { return String(e.title || "").startsWith("【総集編】"); }
+function serialHits(day) {
+  const out = [];
+  for (const k of Object.keys(srSched)) {
+    const s = srSched[k] || {};
+    const eps = (s.episodes || []).filter(e => e && typeof e === "object");
+    const total = eps.filter(e => !isCompRow(e)).length;
+    const cands = eps.map(e => [e, isCompRow(e)]);
+    if (s.compilation && typeof s.compilation === "object") cands.push([s.compilation, true]);
+    for (const [e, c] of cands) {
+      if (String(e.publish_at_jst || "").slice(0, 10) !== day) continue;
+      out.push({key: k, series: s.series || k, ep: c ? null : Number(e.ep), total, title: e.title || "", status: e.status || "", compilation: c, row: e});
+    }
+  }
+  return out;
+}
+function skipDay(day) { return Object.values(srSched).some(s => (s.skip_daily_dates || []).includes(day)); }
+function doneOn(day) { return srPlan.find(r => (r["実行日"] || "").trim() === day && r["ステータス"] === "済"); }
+function srDayLabel(day, i) {
+  const d = new Date(day + "T00:00:00Z");
+  let tag = {0: "今日", 1: "明日", 2: "あさって"}[i] || "";
+  const add = (s) => { tag += (tag ? "・" : "") + s; };
+  if (skipDay(day)) {
+    const h = serialHits(day)[0];
+    if (h) { add(`${SERIALS[h.key] ? SERIALS[h.key].name : h.series} ` + (h.compilation ? "総集編" : `第${h.ep}回`)); if (h.status === "scheduled") add("予約済み"); }
+    else add("連載の日");
+  } else if (doneOn(day)) add("予約済み");
+  return `${day}（${"日月火水木金土"[d.getUTCDay()]}）${tag}`;
+}
+async function srBuildDates(force) {
+  if (!token()) return;
+  srDatesBuilt = true;
+  const sel = $("srDate");
+  const keep = sel.value || store.get("srDate", "");
+  sel.innerHTML = `<option value="">（読み込み中…）</option>`;
+  try { await srLoadSchedules(force); } catch (e) { toast("連載の予定を読めませんでした：" + e.message); }
+  const opts = [`<option value="">（公開日を選ぶ）</option>`];
+  for (let i = 0; i < 21; i++) { const day = jstDay(i); opts.push(`<option value="${day}"${day === keep ? " selected" : ""}>${esc(srDayLabel(day, i))}</option>`); }
+  sel.innerHTML = opts.join("");
+}
+$("srSchedRefresh").addEventListener("click", () => srBuildDates(true));
+$("srDate").addEventListener("change", () => { store.set("srDate", $("srDate").value); srOnDate(); });
+function srDay() { return $("srDate").value || ""; }
+async function srOnDate() {
+  const day = srDay(); if (!day) return;
+  if (srEd.dirty() && !confirm("台本の欄の未保存の編集を捨てて、この日の回に切り替えますか？")) return;
+  $("srDayNote").textContent = "";
+  if (skipDay(day)) {
+    const h = serialHits(day)[0];
+    if (h) { await srLoadSerial(h, day); return; }
+    $("srDayNote").textContent = `${day} は連載の日です（通常回はお休み）。`;
+    return;
+  }
+  if (doneOn(day)) $("srDayNote").textContent = `${day} の分は組み立て済みです（run_plan）。`;
+  else $("srDayNote").textContent = `${day} の回は「この日の回を調べる」で確かめます（台帳は変えません）。台本がまだなら「この日の台本を書く」。`;
+  sr.serial = null;
+}
+$("srPick").addEventListener("click", () => {
+  const day = srDay(); if (!day) { alert("公開日を選んでください。"); return; }
+  if (sr.serial) { toast("この日は連載の回です（読み込み済み）"); return; }
+  runRemote({label: `公開日 ${day} の回を調べる`, argv: ["senior", "pick", "--date", day], after: "seniorFind", ctx: {kind: "senior", day}});
+});
+$("srDraft").addEventListener("click", () => {
+  if (sr.serial) {
+    alert(sr.serial.compilation || !sr.serial.noScript ? "この回の台本はもうあります。台本の欄で直接直して「台本を保存」できます。" : "連載の台本はまだ kpipe では書けません（senior/<連載>/BRIEF.md に沿って Cowork でまとめて書いています）。");
+    return;
+  }
+  const day = srDay();
+  let args;
+  if (day) args = ["senior", "draft", "--for-date", day];
+  else { args = ["senior", "draft"]; const n = $("srNo").value.trim(); if (n) args.push("--number", n); }
+  runRemote({label: day ? `${day} の台本を書く` : "台本の起票", argv: args, after: "seniorFind", ctx: {kind: "senior", day}});
+});
+$("srLoad").addEventListener("click", () => {
+  if (srEd.dirty() && !confirm("台本の欄の未保存の編集を捨てて読み込みますか？")) return;
+  srLoadNumber(true, true);
+});
+$("srReloadScript").addEventListener("click", () => { if (!srEd.dirty() || confirm("編集を捨てて、保存済みの台本を読み直しますか？")) srReloadCurrent(true, true); });
+function srReloadCurrent(fresh, force) {
+  if (sr.serial) return srLoadSerial(sr.serial, sr.serial.day, fresh, force);
+  if (sr.no) return srLoadNumber(fresh, force, sr.no);
+}
+async function srLoadNumber(fresh, force, num) {
+  const n = String(num || $("srNo").value).trim();
+  if (!n) { toast("番号を入れてください"); return; }
+  if (!force && srEd.dirty() && n === sr.no) { toast("台本の欄に未保存の編集があるので、読み直しはしませんでした"); return; }
+  const d = "senior/approved/" + n;
+  if (fresh) cacheClear(d);
+  $("srThree").textContent = "読み込み中…";
+  try {
+    let names;
+    try { names = (await listDir(d)).map(x => x.name); }
+    catch (e) { if (e.status === 404) { $("srThree").textContent = `senior/approved/${n}/ が見つかりません（台本がまだ無い）。`; return; } throw e; }
+    const [script, meta, th, hook, res] = await Promise.all([
+      readTextOr(d + "/script.txt", ""), readJsonOr(d + "/meta.json", {}), readJsonOr(d + "/thumbnail.json", {}),
+      readTextOr(d + "/short_hook.txt", ""), readJsonOr(d + "/result.json", {})]);
+    sr.no = n; sr.serial = null; $("srNo").value = n; store.set("srNo", n);
+    const lines = th.lines || ["", ""];
+    $("srThree").textContent = `No.${n}\nタイトル：${meta.title || ""}\nサムネ1行目：${lines[0] || ""}／2行目：${lines[1] || ""}\nショート1行目：${hook.trim()}`;
+    srEd.set(script);
+    const ap = names.includes("APPROVED");
+    $("srResult").innerHTML = res.video_url
+      ? `投稿済み：<a href="${esc(res.video_url)}" target="_blank" rel="noopener">${esc(res.video_url)}</a>（予約 ${esc(res.publish_at || "")} UTC）` + ((res.shorts || {}).url ? `<br>ショート：${esc(res.shorts.url)}` : "")
+      : (ap ? "承認済み・未組み立て（OK を押すと組み立てる）" : "読み待ち（OK か直しを）");
+    srShowThumbs(th);
+  } catch (e) { $("srThree").textContent = "読めませんでした：" + e.message; }
+}
+function srShowThumbs(th) {
+  const urls = (th && th.preview_urls) || {};
+  const variants = (th && th["文言3案"]) || {};
+  const items = Object.entries(urls).slice(0, 4);
+  $("srThumbs").innerHTML = items.length ? items.map(([tag, url]) => {
+    let text = tag;
+    for (const [name, ln] of Object.entries(variants)) if (Array.isArray(ln) && name.includes(tag)) text = `${name}：${ln.join("／")}`;
+    return `<div><a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="${esc(text)}" loading="lazy"></a><div class="muted">${esc(text)}</div></div>`;
+  }).join("") : `<p class="muted">（サムネのプレビュー画像なし）</p>`;
+}
+async function srLoadSerial(h, day, fresh, force) {
+  const key = h.key, cfg = SERIALS[key] || {name: key};
+  if (fresh) { cacheClear(`senior/${key}/`); }
+  try {
+    const sched = await readJsonOr(`senior/${key}/schedule.json`, {});
+    srSched[key] = sched;
+    const fresh2 = serialHits(day).find(x => x.key === key && x.ep === h.ep);
+    if (fresh2) h = fresh2;
+  } catch (e) {}
+  sr.serial = {key, ep: h.ep, compilation: !!h.compilation, day, series: h.series, total: h.total, title: h.title, status: h.status};
+  sr.no = ""; $("srNo").value = "";
+  const sched = srSched[key] || {};
+  const statusJa = {scheduled: "予約投稿済み", script_ready: "台本あり・まだ組み立てていない", planned: "予定のみ（まだ作っていない）"}[h.status] || h.status;
+  if (h.compilation) {
+    const comp = sched.compilation || (sched.episodes || []).find(isCompRow) || {};
+    $("srThree").textContent = `連載 ${h.series} 総集編\nタイトル：${h.title}\n公開 ${comp.publish_at_jst || ""}／${statusJa}`;
+    srEd.set("（総集編は公開済みの各話の動画をつないで作るので、台本はありません。\n下の「OK → 動画化して公開日の19時に予約投稿」で、全話をつないだ一気見を schedule.json の日時に予約します）\n");
+    $("srResult").textContent = `総集編：${statusJa}` + (comp.video_url ? `　${comp.video_url}` : "");
+    srShowThumbs({});
+    $("srDayNote").textContent = `${day} は連載 ${cfg.name} の総集編です（${statusJa}）。`;
+    return;
+  }
+  const ep = Number(h.ep), epd = `senior/${key}/ep${pad(ep)}`;
+  const row = (sched.episodes || []).find(e => Number(e.ep || 0) === ep) || {};
+  const lines = row.thumb_lines || [];
+  $("srThree").textContent = `連載 ${h.series} 第${ep}回（全${h.total}回）　公開 ${row.publish_at_jst || ""}\nタイトル：${row.title || ""}\nサムネ：${lines.join("／")}\nショート1行目：${row.hook || ""}`;
+  if (!force && srEd.dirty() && fresh) { toast("台本の欄に未保存の編集があるので、本文は読み直しませんでした"); }
+  else {
+    const script = await readTextOr(epd + "/script.txt", null);
+    if (script == null) { srEd.set(`（この回の台本はまだありません。連載の台本は senior/${key}/BRIEF.md に沿って Cowork でまとめて書いています）\n`); sr.serial.noScript = true; }
+    else srEd.set(script);
+  }
+  $("srResult").innerHTML = row.video_url ? `投稿済み：<a href="${esc(row.video_url)}" target="_blank" rel="noopener">${esc(row.video_url)}</a>（予約 ${esc(row.publish_at_jst || "")}）` : `連載 ${esc(cfg.name)} 第${ep}回：${esc(statusJa)}`;
+  srShowThumbs(await readJsonOr(epd + "/thumbnail.json", {}));
+  $("srDayNote").textContent = `${day} は連載 ${cfg.name} 第${ep}回（全${h.total}回）です。`;
+}
+function srMotion() { return $("srMotion").checked; }
+$("srMotion").addEventListener("change", () => { store.set("srMotion", $("srMotion").checked); toast(`章画像をゆっくり寄せる：${$("srMotion").checked ? "入" : "切"}（次に作る動画から）`); });
+function needSr() {
+  if (sr.serial) return true;
+  const n = $("srNo").value.trim();
+  if (!n || n !== sr.no) { alert("先に番号を読み込んでください（または公開日を選んでください）。"); return false; }
+  return true;
+}
+$("srSave").addEventListener("click", () => {
+  if (!needSr()) return;
+  const text = srEd.text();
+  if (!text.trim()) { alert("台本が空です。"); return; }
+  let channel, job;
+  if (sr.serial) {
+    if (sr.serial.compilation) { alert("総集編には台本がありません。"); return; }
+    if (sr.serial.noScript) { alert("この回の台本ファイルがまだありません（連載の台本は Cowork でまとめて書いています）。"); return; }
+    channel = sr.serial.key; job = "ep" + pad(sr.serial.ep);
+  } else { channel = "senior"; job = sr.no; }
+  runRemote({label: "台本を保存", argv: ["script", "apply", "--channel", channel, "--job", job, "--file", "{INPUT}"], input: text,
+    after: sr.serial ? "serialReload" : "seniorReload", ctx: {kind: sr.serial ? "serial" : "senior", channel, job, isSave: true, ep: sr.serial ? sr.serial.ep : undefined}})
+    .then(e => { if (e && e.state === "sent") { srEd.saved = text; srEd.mark(); } });
+});
+$("srRevise").addEventListener("click", () => {
+  if (sr.serial) { alert("連載の回は、台本の欄で直接書き直して「台本を保存」してください（指示での書き直しは通常回・記録の枠だけ）。"); return; }
+  if (!needSr()) return;
+  const inst = $("srInst").value.trim();
+  if (!inst) { alert("直しの指示を入れてください。"); return; }
+  if (!okToProceed(srEd)) return;
+  runRemote({label: "台本の直し", argv: ["senior", "revise", "--number", sr.no, "--instruction", inst], after: "seniorReload", ctx: {kind: "senior", channel: "senior", job: sr.no, clearInst: true}});
+});
+function serialRebuildArgv(s) { return [SERIALS[s.key].cmd, "build", "--ep", String(s.ep), "--until", "compose"]; }
+$("srPreview").addEventListener("click", () => {
+  if (!needSr()) return;
+  if (!okToProceed(srEd)) return;
+  const s = sr.serial;
+  if (s) {
+    const name = SERIALS[s.key].name;
+    if (s.compilation) {
+      runRemote({label: `${name} 総集編（投稿しない）`, argv: [s.key, "build", "--no-upload"], motion: srMotion(), after: "serialReload", ctx: {kind: "serial", channel: s.key},
+        confirm: "全話をつないだ mp4 を作ります（投稿はしません）。よろしいですか？"});
+      return;
+    }
+    runRemote({label: `${name} 第${s.ep}回（投稿しない）`, argv: serialRebuildArgv(s), preview: ["video"], motion: srMotion(), after: "rebuild",
+      ctx: {kind: "serial", channel: s.key, job: "ep" + pad(s.ep), ep: s.ep},
+      confirm: `第${s.ep}回の mp4 を作ります（投稿はしません）。\n音声（ElevenLabs）と画像の費用はかかります。よろしいですか？`});
+    return;
+  }
+  runRemote({label: "動画だけ作成（投稿しない）", argv: ["engine", "build", "--channel", "senior", "--job", sr.no, "--until", "compose"], preview: ["video"], motion: srMotion(),
+    after: "rebuild", ctx: {kind: "senior", channel: "senior", job: sr.no},
+    confirm: `No.${sr.no} の台本で音声・画像・字幕・動画まで作ります（投稿はしない）。\n音声（ElevenLabs）と画像（OpenAI）の費用はかかります。よろしいですか？`});
+});
+$("srBuild").addEventListener("click", () => {
+  if (!needSr()) return;
+  if (!okToProceed(srEd)) return;
+  const s = sr.serial;
+  if (s) {
+    const name = SERIALS[s.key].name;
+    if (s.compilation) {
+      runRemote({label: `${name} 総集編の組み立て・予約投稿`, argv: [s.key, "build"], motion: srMotion(), after: "serialReload", ctx: {kind: "serial", channel: s.key},
+        confirm: "全話をつないだ一気見を作り、schedule.json の日時に予約投稿します。\n各話の完成 mp4 を落として使うので時間がかかります。取り消せません。よろしいですか？"});
+      return;
+    }
+    const row = ((srSched[s.key] || {}).episodes || []).find(e => Number(e.ep || 0) === Number(s.ep)) || {};
+    runRemote({label: `${name} 第${s.ep}回の組み立て・予約投稿`, argv: [SERIALS[s.key].cmd, "build", "--ep", String(s.ep)], motion: srMotion(), after: "serialReload",
+      ctx: {kind: "serial", channel: s.key, job: "ep" + pad(s.ep), ep: s.ep},
+      confirm: `第${s.ep}回を参照画像方式で組み立て、${row.publish_at_jst || "公開日"} に予約投稿します。\n人物の姿は refs でそろえます。取り消せません。よろしいですか？`});
+    return;
+  }
+  const day = srDay();
+  const when = day ? `${day} 19:00` : "当日19:00（過ぎていれば翌日）";
+  runRemote({label: "動画化・予約投稿", argv: ["senior", "build", "--number", sr.no, "--approved-by", "スマホアプリで洪正幸さんが OK", ...(day ? ["--date", day] : [])],
+    motion: srMotion(), after: "seniorReload", ctx: {kind: "senior", channel: "senior", job: sr.no},
+    confirm: `No.${sr.no} をこの台本で動画化し、${when}に予約投稿します。\n取り消せません。よろしいですか？`});
+});
+$("srThumb").addEventListener("click", () => {
+  if (sr.serial) { alert("連載のサムネ文言は senior/<連載>/schedule.json の thumb_lines から作ります。"); return; }
+  if (!needSr()) return;
+  const l1 = $("srL1").value.trim(), l2 = $("srL2").value.trim();
+  if (!l1) { alert("1行目を入れてください。"); return; }
+  const args = ["thumb", "--channel", "senior", "--job", sr.no, "--line", l1];
+  if (l2) args.push("--line", l2);
+  runRemote({label: "サムネ別案", argv: args, after: "seniorReload", ctx: {kind: "senior", channel: "senior", job: sr.no}});
+});
+$("srStatus").addEventListener("click", () => runRemote({label: "台帳の状態", argv: ["senior", "status"]}));
+$("srRetouch").addEventListener("click", () => {
+  if (!needSr()) return;
+  const s = sr.serial;
+  if (s && s.compilation) { alert("総集編は手直しできません。"); return; }
+  if (!okToProceed(srEd)) return;
+  if (s) {
+    rtOpen({kind: "serial", channel: s.key, job: "ep" + pad(s.ep), ep: s.ep, motion: srMotion(),
+      title: `連載 ${SERIALS[s.key].name} 第${s.ep}回`, rebuild: {argv: serialRebuildArgv(s)}});
+  } else {
+    rtOpen({kind: "senior", channel: "senior", job: sr.no, motion: srMotion(), title: `No.${sr.no} ` + (($("srThree").textContent.split("\n")[1]) || ""),
+      rebuild: {argv: ["engine", "build", "--channel", "senior", "--job", sr.no, "--until", "compose"]}});
+  }
+});
+
+/* ============================================================ 手直し */
+let rt = store.get("retouch", null) || {ctx: null};
+function rtReset(ctx) { rt = {ctx, chapters: [], parts: [], chapPrev: {}, chapPrevErr: {}, partPrev: {}, takePrev: {}, sel: null, videoPrev: "", partsStale: false}; }
+if (!rt.ctx) rtReset(null);
+rt.chapPrevErr = {};
+function rtSave() { const c = Object.assign({}, rt); delete c.chapPrevErr; store.set("retouch", c); }
+function rtSame(ctx) { return rt.ctx && ctx && rt.ctx.channel === ctx.channel && rt.ctx.job === ctx.job; }
+function rtOpen(ctx) {
+  if (!rtSame(ctx)) rtReset(ctx); else rt.ctx = ctx;
+  rtSave(); rtRender(); showTab("retouch");
+}
+function rtBase() { return ["--channel", rt.ctx.channel, "--job", rt.ctx.job]; }
+function rtCtx(extra) { return Object.assign({kind: rt.ctx.kind, channel: rt.ctx.channel, job: rt.ctx.job}, extra || {}); }
+function rtNeed() { if (!rt.ctx) { alert("ブログ・シニア・連載の回の画面で「動画を手直し…」を押してから使ってください。"); return false; } return true; }
+function rtRender() {
+  const c = rt.ctx;
+  $("rtTarget").textContent = c ? `${c.title || ""}\nチャンネル：${c.channel}　job：${c.job}` : "（ブログ・シニア・連載の回の画面で「動画を手直し…」を押すと、ここで開きます）";
+  const last = hist.find(h => h.result && rtSame(h.ctx) && h.result.work_present === false);
+  $("rtWarn").textContent = last ? "この回の作業データがクラウドにありません（PC で作った回など）。章画像・音声の手直しの前に「反映して動画を作り直す」で一度作るか、PC 版を使ってください。" : "";
+  rtRenderChapters(); rtRenderParts(); rtRenderVideo();
+}
+function rtRenderChapters() {
+  const box = $("rtChapList");
+  if (!rt.ctx || !rt.chapters || !rt.chapters.length) { box.innerHTML = ""; $("rtChapNote").textContent = rt.ctx ? "「章の一覧を取ってくる」を押してください（1〜2分かかります）。" : ""; return; }
+  $("rtChapNote").textContent = `${rt.chapters.length} 章。画像を見るには章ごとの「画像を見る」を押します。`;
+  box.innerHTML = rt.chapters.map(ch => {
+    const i = ch.index, url = rt.chapPrev[i], err = rt.chapPrevErr[i];
+    return `<div class="chap" data-i="${i}">
+      <div class="t">章 ${i}　${esc(ch.heading)}</div>
+      <div class="meta">${ch.exists ? "画像あり" : "画像なし（まだ作っていないか、作り直し待ち）"}${ch.note ? "｜" + esc(ch.note) : ""}</div>
+      <div class="prev">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="章 ${i} の画像" loading="lazy"></a>` : ""}${err ? `<p class="note err">${esc(err)}</p>` : ""}</div>
+      <button class="small" data-act="see">画像を見る</button>
+      <label class="f" for="rtInst${i}">変更の指示（例：夜ではなく朝日の差す森に／人物を消して風景だけに）</label>
+      <input type="text" id="rtInst${i}">
+      <button class="small pri" data-act="regen" style="margin-top:6px">この章の画像を作り直す</button>
+    </div>`;
+  }).join("");
+}
+$("rtChapList").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-act]"); if (!b) return;
+  const i = Number(b.closest(".chap").dataset.i);
+  if (b.dataset.act === "see") {
+    runRemote({label: `章 ${i} の画像を見る`, argv: ["retouch", "chapters", ...rtBase()], preview: [`chapter:${i}`], after: "chapters", ctx: rtCtx({index: i})});
+  } else {
+    const inst = $("rtInst" + i).value.trim();
+    if (!inst) { alert("変更の指示を入れてください。"); return; }
+    runRemote({label: `章 ${i} の画像を作り直す`, argv: ["retouch", "image", ...rtBase(), "--index", String(i), "--instruction", inst], preview: [`chapter:${i}`],
+      after: "chapterImage", ctx: rtCtx({index: i}),
+      confirm: `章 ${i} の画像だけ作り直します（Sonnet で情景を書き直し → 画像1枚を生成、数円）。\nできたら「反映して動画を作り直す」で動画に入ります。よろしいですか？`});
+  }
+});
+$("rtChapLoad").addEventListener("click", () => { if (rtNeed()) runRemote({label: "章の一覧", argv: ["retouch", "chapters", ...rtBase()], after: "chapters", ctx: rtCtx()}); });
+$("rtReadDo").addEventListener("click", () => {
+  if (!rtNeed()) return;
+  const w = $("rtWord").value.trim(), r = $("rtReading").value.trim();
+  if (!w || !r) { alert("語と よみ を入れてください。"); return; }
+  const args = ["retouch", "reading", ...rtBase(), "--word", w, "--reading", r];
+  if (!$("rtRegister").checked) args.push("--no-register");
+  runRemote({label: `読みを直す：${w}→${r}`, argv: args, after: "reading", ctx: rtCtx()});
+});
+function rtCurPart() { return (rt.parts || []).find(p => p.part === Number(rt.sel)); }
+function rtRenderParts() {
+  const sel = $("rtPartSel");
+  if (!rt.ctx || !rt.parts || !rt.parts.length) {
+    sel.innerHTML = `<option value="">（一覧を取ってきてください）</option>`; $("rtPartDetail").classList.add("hidden"); return;
+  }
+  sel.innerHTML = `<option value="">（パートを選ぶ）</option>` + rt.parts.map(p =>
+    `<option value="${p.part}"${p.part === Number(rt.sel) ? " selected" : ""}>${p.part}．${esc(p.time)} ${"⚠".repeat(Math.min(3, (p.suspects || []).length))}${p.takes && p.takes.length ? `（録り直し${p.takes.length}回${p.stable ? "・安定" : ""}）` : ""} ${esc(p.head)}</option>`).join("");
+  if (rt.partsStale) $("rtPartNote").textContent = $("rtPartNote").textContent || "パートの一覧は取り直すと最新になります。";
+  rtRenderPartDetail();
+}
+let rtShownPart = null;
+function rtRenderPartDetail() {
+  const p = rtCurPart();
+  $("rtPartDetail").classList.toggle("hidden", !p);
+  if (!p) return;
+  const lines = [`パート ${p.part}（${p.time}・${p.chars}字）`];
+  for (const s of (p.suspects || [])) lines.push(`⚠ ${fmtSec(s.start)} ${s.reason}：${s.text}`);
+  if (!(p.suspects || []).length) lines.push("（目安の⚠はありません）");
+  $("rtPartInfo").textContent = lines.join("\n");
+  const url = rt.partPrev[p.part];
+  $("rtPartPrev").innerHTML = url ? `<audio controls preload="none" src="${esc(url)}"></audio>` : "";
+  const takes = p.takes || [];
+  const cur = $("rtTakeSel").value;
+  $("rtTakeSel").innerHTML = takes.length ? takes.map(k => `<option value="${k}"${String(k) === cur ? " selected" : ""}>取り${k}</option>`).join("") : `<option value="">（前の録音なし）</option>`;
+  if (!cur && takes.length) $("rtTakeSel").value = String(takes[takes.length - 1]);
+  rtRenderTake();
+  if (rtShownPart !== p.part) { $("rtPartText").value = String(p.text || "").trim(); rtShownPart = p.part; }
+}
+function rtRenderTake() {
+  const p = rtCurPart(); const k = $("rtTakeSel").value;
+  const url = p && k ? rt.takePrev[p.part + ":" + k] : "";
+  $("rtTakePrev").innerHTML = url ? `<audio controls preload="none" src="${esc(url)}"></audio>` : "";
+}
+function fmtSec(t) { if (t == null) return "--:--"; t = Math.max(0, Number(t)); return `${Math.floor(t / 60)}:${pad(Math.floor(t % 60))}`; }
+function rtPartEdited() { const p = rtCurPart(); return !!p && $("rtPartText").value.trim() !== String(p.text || "").trim(); }
+$("rtPartSel").addEventListener("change", () => {
+  const v = $("rtPartSel").value;
+  if (rt.sel && Number(v) !== Number(rt.sel) && rtPartEdited() && !confirm(`パート ${rt.sel} の読み上げの直しがまだ録り直されていません。\n直しを捨てて別のパートへ移りますか？`)) {
+    $("rtPartSel").value = String(rt.sel); return;
+  }
+  rt.sel = v ? Number(v) : null; rtShownPart = null; rtSave(); rtRenderPartDetail();
+});
+$("rtTakeSel").addEventListener("change", rtRenderTake);
+$("rtPartsLoad").addEventListener("click", () => { if (rtNeed()) runRemote({label: "音声のパート一覧", argv: ["retouch", "parts", ...rtBase()], after: "parts", ctx: rtCtx()}); });
+$("rtFindAt").addEventListener("click", () => {
+  if (!rtNeed()) return; const at = $("rtAt").value.trim(); if (!at) { alert("動画の時刻を入れてください（例 12:34）。"); return; }
+  runRemote({label: `時刻 ${at} のパートを探す`, argv: ["retouch", "find", ...rtBase(), "--at", at], after: "find", ctx: rtCtx()});
+});
+$("rtFindPh").addEventListener("click", () => {
+  if (!rtNeed()) return; const ph = $("rtPhrase").value.trim(); if (!ph) { alert("言葉を入れてください。"); return; }
+  runRemote({label: `「${ph}」のパートを探す`, argv: ["retouch", "find", ...rtBase(), "--phrase", ph], after: "find", ctx: rtCtx()});
+});
+$("rtListen").addEventListener("click", () => {
+  const p = rtCurPart(); if (!p) { alert("パートを選んでください。"); return; }
+  runRemote({label: `パート ${p.part} を聴く`, argv: ["retouch", "parts", ...rtBase()], preview: [`part:${p.part}`], after: "parts", ctx: rtCtx({part: p.part})});
+});
+$("rtTakeListen").addEventListener("click", () => {
+  const p = rtCurPart(), k = $("rtTakeSel").value; if (!p || !k) { alert("パートと聴く取りを選んでください。"); return; }
+  runRemote({label: `パート ${p.part} の取り${k} を聴く`, argv: ["retouch", "parts", ...rtBase()], preview: [`take:${p.part}:${k}`], after: "parts", ctx: rtCtx({part: p.part, take: k})});
+});
+$("rtRetake").addEventListener("click", () => {
+  const p = rtCurPart(); if (!p) { alert("パートを選んでください。"); return; }
+  if (rtPartEdited()) { $("rtSpeech").click(); return; }
+  const stable = $("rtStable").checked;
+  const args = ["retouch", "retake", ...rtBase(), "--part", String(p.part)];
+  if (stable) args.push("--stable");
+  runRemote({label: `パート ${p.part} の録り直し`, argv: args, preview: [`part:${p.part}`], after: "partChanged", ctx: rtCtx({part: p.part}),
+    confirm: `パート ${p.part}（${p.time}・${p.chars}字）を${stable ? "安定寄り（崩れにくいが抑揚は少し平ら）" : "いつもの設定"}で録り直します。\nElevenLabs を約${p.chars + 10}字ぶん使います。いまの録音は残るので、あとで戻せます。よろしいですか？`});
+});
+$("rtRestore").addEventListener("click", () => {
+  const p = rtCurPart(), k = $("rtTakeSel").value; if (!p || !k) { alert("パートと戻す取りを選んでください。"); return; }
+  runRemote({label: `パート ${p.part} を取り${k} に戻す`, argv: ["retouch", "restore", ...rtBase(), "--part", String(p.part), "--take", String(k)], preview: [`part:${p.part}`],
+    after: "partChanged", ctx: rtCtx({part: p.part}),
+    confirm: `パート ${p.part} を取り${k} に戻します（いまの録音も取りとして残します。API は使いません）。`});
+});
+$("rtSpeech").addEventListener("click", () => {
+  const p = rtCurPart(); if (!p) { alert("パートを選んでください。"); return; }
+  const text = $("rtPartText").value;
+  if (!rtPartEdited()) { alert("読み上げ用の文字が変わっていません。書き直してから押してください。\n（文字はそのままで録り直すなら「録り直す」）"); return; }
+  if (/[\[\]|《》]/.test(text)) { alert("[ ] | 《 》は使えません。"); return; }
+  const stable = $("rtStable").checked;
+  const args = ["retouch", "speech", ...rtBase(), "--part", String(p.part), "--text-file", "{INPUT}"];
+  if (stable) args.push("--stable");
+  const n = text.replace(/\s+/g, "").length;
+  runRemote({label: `パート ${p.part} の読み上げを直す`, argv: args, input: text, preview: [`part:${p.part}`], after: "partChanged", ctx: rtCtx({part: p.part, speech: true}),
+    confirm: `パート ${p.part} の読み上げを直して、${stable ? "安定寄り" : "いつもの設定"}で録り直します（字幕はそのまま）。\n台本（script.txt）にも読みの注記として書き戻すので、作り直しても消えません。\nElevenLabs を約${n + 10}字ぶん使います。よろしいですか？`});
+});
+$("rtUndo").addEventListener("click", () => { const p = rtCurPart(); if (p) { $("rtPartText").value = String(p.text || "").trim(); toast("読み上げ用の文字を元に戻しました"); } });
+function rtRenderVideo() { $("rtVideoPrev").innerHTML = rt.videoPrev ? `<video controls preload="none" playsinline src="${esc(rt.videoPrev)}"></video>` : ""; }
+$("rtRebuild").addEventListener("click", () => {
+  if (!rtNeed()) return;
+  runRemote({label: "反映して動画を作り直す（投稿しない）", argv: rt.ctx.rebuild.argv, preview: ["video"], motion: !!rt.ctx.motion, after: "rebuild", ctx: rtCtx(),
+    confirm: "直した章画像・音声を入れて、動画を作り直します（投稿はしません）。よろしいですか？"});
+});
+
+/* ============================================================ 紙芝居 */
+function fmName() { const n = $("fmName").value.trim(); if (!n) { alert("作品名を入れてください。"); return ""; } store.set("fmName", n); return n; }
+function fmRenderWorks() {
+  const works = store.get("familyWorks", []);
+  const cur = $("fmName").value.trim();
+  $("fmWork").innerHTML = works.length ? `<option value="">（作品を選ぶ・${works.length}件）</option>` + works.map(w =>
+    `<option value="${esc(w.name)}"${w.name === cur ? " selected" : ""}>${esc(w.name)}｜${esc(w.title)}｜画像${w.images} 音声${w.audio}${w.video_id ? "｜投稿済み" : (w.final ? "｜動画あり" : "")}</option>`).join("")
+    : `<option value="">（一覧を取ってきてください）</option>`;
+}
+$("fmWork").addEventListener("change", () => { if ($("fmWork").value) { $("fmName").value = $("fmWork").value; store.set("fmName", $("fmWork").value); } });
+const pagesOf = (s) => s.trim().split(/[\s,、]+/).filter(x => /^\d+$/.test(x));
+function fmRun(label, args, extra) { return runRemote(Object.assign({label: "紙芝居：" + label, argv: ["family", ...args], after: "family", ctx: {kind: "family"}}, extra || {})); }
+$("fmList").addEventListener("click", () => fmRun("作品の一覧", ["list", "--json"], {ctx: {kind: "family", list: true}}));
+$("fmNew").addEventListener("click", () => { const n = fmName(); if (!n) return; fmRun("新しい作品", ["new", n, "--title", $("fmTitle").value.trim() || n]); });
+$("fmDraft").addEventListener("click", () => {
+  const n = fmName(); if (!n) return;
+  const base = $("fmBase").value.trim(); if (!base) { alert("下地の作品を入れてください。"); return; }
+  const a = ["draft", n, "--base", base, "--lead", $("fmLead").value];
+  if ($("fmWish").value.trim()) a.push("--wish", $("fmWish").value.trim());
+  if ($("fmDraftForce").checked) a.push("--force");
+  fmRun("台本の下書き", a, $("fmDraftForce").checked ? {confirm: "いまの台本を書き直します。よろしいですか？"} : {});
+});
+$("fmPages").addEventListener("click", () => { const n = fmName(); if (n) fmRun("絵の指示", ["pages", n]); });
+$("fmCheck").addEventListener("click", () => { const n = fmName(); if (n) fmRun("台本の点検", ["check", n]); });
+$("fmSheet").addEventListener("click", () => { const n = fmName(); if (n) fmRun("章画像の一覧", ["sheet", n]); });
+$("fmImages").addEventListener("click", () => {
+  const n = fmName(); if (!n) return;
+  const a = ["images", n]; const pg = pagesOf($("fmImgPages").value);
+  if (pg.length) a.push("--pages", ...pg);
+  if ($("fmImgForce").checked) a.push("--force");
+  fmRun("章画像", a, {confirm: "章画像を作ります（画像の費用がかかります）。よろしいですか？"});
+});
+$("fmTts").addEventListener("click", () => {
+  const n = fmName(); if (!n) return;
+  const a = ["tts", n]; const pg = pagesOf($("fmTtsPages").value);
+  if (pg.length) a.push("--pages", ...pg);
+  if ($("fmTtsForce").checked) a.push("--force");
+  if ($("fmVoice").value.trim()) a.push("--voice", $("fmVoice").value.trim());
+  fmRun("音声", a, {confirm: "音声を作ります（ElevenLabs を使います）。よろしいですか？"});
+});
+$("fmRender").addEventListener("click", () => { const n = fmName(); if (!n) return; const a = ["render", n]; if ($("fmRenderForce").checked) a.push("--force"); fmRun("動画にする", a); });
+$("fmRedo").addEventListener("click", () => {
+  const n = fmName(); if (!n) return; const pg = $("fmPage").value.trim(); if (!/^\d+$/.test(pg)) { alert("枚を入れてください。"); return; }
+  const a = ["redo", n, "--page", pg, "--cands", $("fmCands").value];
+  if ($("fmNote").value.trim()) a.push("--note", $("fmNote").value.trim());
+  fmRun(`${pg}枚目の作り直し候補`, a);
+});
+$("fmPick").addEventListener("click", () => {
+  const n = fmName(); if (!n) return; const pg = $("fmPage").value.trim(); const f = $("fmFile").value.trim();
+  if (!/^\d+$/.test(pg) || !f) { alert("枚と画像のファイルを入れてください。"); return; }
+  fmRun(`${pg}枚目に画像を入れる`, ["pick", n, "--page", pg, "--file", f], {confirm: `${pg}枚目を「${f}」に差し替えます。よろしいですか？`});
+});
+$("fmUpload").addEventListener("click", () => {
+  const n = fmName(); if (!n) return; const a = ["upload", n]; if ($("fmAgain").checked) a.push("--again");
+  fmRun("家族チャンネルへ非公開でアップ", a, {confirm: `「${n}」を家族用チャンネルへ「非公開」でアップします。\n取り消せません。よろしいですか？`});
+});
+
+/* ============================================================ 実行状況 */
+let curDetail = null;
+function stateTag(h) {
+  if (h.state === "sending") return `<span class="tag run">送信中</span>`;
+  if (h.state === "error") return `<span class="tag ng">頼めず</span>`;
+  if (h.state === "sent") return `<span class="tag run">${h.runStatus === "queued" ? "待ち" : "受付済み"}</span>`;
+  if (h.state === "running") return `<span class="tag run">${h.runStatus === "queued" ? "待ち" : h.runStatus === "completed" ? "結果待ち" : "実行中"}</span>`;
+  if (h.result && h.result.ok) return `<span class="tag ok">成功</span>`;
+  return `<span class="tag ng">失敗</span>`;
+}
+function fmtTime(ms) { const d = new Date(ms + 9 * 3600 * 1000); return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
+function renderStatusList() {
+  const box = $("stList");
+  if (!hist.length) { box.innerHTML = `<p class="muted">まだ何も頼んでいません。</p>`; return; }
+  box.innerHTML = hist.map(h => `<div class="item" data-req="${esc(h.req)}" role="button" tabindex="0" style="cursor:pointer">
+    <div class="t">${stateTag(h)} ${esc(h.label)}</div>
+    <div class="meta">${fmtTime(h.created)}｜${esc(h.req)}</div>
+    ${h.result && h.result.message ? `<div class="meta">${esc(h.result.message)}</div>` : ""}
+    ${h.error ? `<div class="meta err">${esc(h.error)}</div>` : ""}
+  </div>`).join("");
+}
+$("stList").addEventListener("click", (ev) => { const it = ev.target.closest(".item[data-req]"); if (it) openDetail(it.dataset.req); });
+$("stBack").addEventListener("click", () => { curDetail = null; $("stDetailView").classList.add("hidden"); $("stListView").classList.remove("hidden"); renderStatusList(); });
+$("stPoll").addEventListener("click", () => { pollOnce(); toast("確かめています…", 1500); });
+$("stClear").addEventListener("click", () => {
+  if (!confirm("終わった要求を一覧から消します（動いているものは残します）。よろしいですか？")) return;
+  hist = hist.filter(isActive); saveHist(); renderStatusList();
+});
+function openDetail(req) {
+  curDetail = req;
+  $("stListView").classList.add("hidden"); $("stDetailView").classList.remove("hidden");
+  showTab("status");
+  renderDetail(req);
+}
+async function renderDetail(req, quiet) {
+  const h = findHist(req); if (!h) return;
+  const box = $("stDetail");
+  const argvTxt = h.argv.map(a => /\s/.test(a) ? JSON.stringify(a) : a).join(" ");
+  let html = `<div class="card"><h3>${stateTag(h)} ${esc(h.label)}</h3>
+    <div class="kv"><div>要求ID</div><div>${esc(h.req)}</div><div>頼んだ時刻</div><div>${fmtTime(h.created)}</div>
+    <div>引数</div><div style="word-break:break-all">${esc(argvTxt)}</div>
+    ${h.motion ? `<div>寄せ</div><div>章画像をゆっくり寄せる</div>` : ""}
+    <div>Actions</div><div>${h.runUrl ? `<a href="${esc(h.runUrl)}" target="_blank" rel="noopener">${esc(runStatusJa(h))}（開く）</a>` : esc(runStatusJa(h))}</div></div>
+    ${h.error ? `<p class="err">${esc(h.error)}</p>` : ""}`;
+  if (isActive(h)) html += `<p class="note">10秒ごとに確かめています。画面を閉じても、開き直せば続きを追います。</p>`;
+  html += `</div>`;
+  let res = null;
+  if (h.state === "done" && h.result && h.result.rc !== -1) {
+    try { res = await fetchResult(h); } catch (e) { html += `<p class="note err">結果ファイルを読めませんでした：${esc(e.message)}</p>`; }
+  }
+  if (h.state === "done" && h.result) {
+    const r = res || h.result;
+    html += `<div class="card"><h3>結果</h3>
+      <p class="${r.ok ? "okc" : "err"}">${esc(r.message || (r.ok ? "成功しました" : "止まりました"))}（終了コード ${esc(r.rc)}）</p>
+      ${r.commit ? `<p class="note">main に反映しました（コミット ${esc(r.commit)}）。PC 版は同期で取り込めます。</p>` : ""}
+      ${r.work_present === false ? `<p class="note warn">この回の作業データはクラウドに無い状態で動きました（PC で作った回など）。音声の録り直しなどは PC 版で。</p>` : ""}
+      <div class="prev">${previewsHtml(r.previews || [])}</div></div>`;
+    if (!r.ok) html += errorBox(h, res);
+    const out = res ? String(res.output || "") : (h.result.tail || "");
+    const report = /✅ フルセット完了[\s\S]*|（自動）【投稿しました】[\s\S]*/.exec(out);
+    if (report) html += `<div class="card"><h3>完了報告</h3><pre>${esc(report[0].slice(0, 6000))}</pre></div>`;
+    const js = res ? res.json : h.jsonData;
+    if (js != null) html += `<details class="card"><summary>一覧（JSON）</summary><pre>${esc(JSON.stringify(js, null, 1).slice(0, 40000))}</pre></details>`;
+    html += `<details class="card"${r.ok ? "" : " open"}><summary>ログの末尾</summary><pre>${esc(out.slice(-12000))}</pre></details>`;
+    html += `<div class="row"><button class="small" data-d="again">同じ操作をもう一度</button></div>`;
+  }
+  if (curDetail !== req) return;
+  if (quiet && box.dataset.req === req && box.dataset.state === h.state + (h.runStatus || "")) return;
+  box.dataset.req = req; box.dataset.state = h.state + (h.runStatus || "");
+  box.innerHTML = html;
+}
+function runStatusJa(h) {
+  if (h.state === "sending") return "送信中";
+  if (h.state === "error") return "頼めませんでした";
+  if (!h.runStatus) return "まだ見つかりません（動き出すまで1〜2分）";
+  if (h.runStatus === "completed") return "完了（" + conclusionJa(h.runConclusion) + "）";
+  return {queued: "順番待ち", in_progress: "実行中", waiting: "待ち", requested: "受付", pending: "待ち"}[h.runStatus] || h.runStatus;
+}
+function previewsHtml(list) {
+  return list.map(p => {
+    if (!p.url) return `<p class="note err">${esc(p.label || p.kind)}：${esc(p.error || "取り出せませんでした")}</p>`;
+    const u = esc(p.url), lab = `<div class="muted">${esc(p.label || p.kind)}</div>`;
+    if (/\.mp4(\?|$)/i.test(p.url) || p.kind === "video") return lab + `<video controls preload="metadata" playsinline src="${u}"></video>`;
+    if (/\.(mp3|m4a|wav|ogg)(\?|$)/i.test(p.url) || p.kind === "part" || p.kind === "take") return lab + `<audio controls preload="none" src="${u}"></audio>`;
+    return lab + `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="${esc(p.label || "")}" loading="lazy"></a>`;
+  }).join("");
+}
+function errChannelJob(h, res) {
+  const c = h.ctx || {};
+  let channel = c.channel || "", job = c.job || "";
+  if (!job && channel === "spacebrothers") job = jobFromOutput(res ? res.output : "") || (h.result && h.result.job) || "";
+  return {channel, job, kind: c.kind || ""};
+}
+function errorBox(h, res) {
+  const out = res ? String(res.output || "") : (h.result.tail || "");
+  const err = parseError(out);
+  const step = err.step;
+  const resetStep = RESET_STEP[step] || step;
+  const hint = STEP_HINTS[step] || STEP_HINTS[resetStep] || "ログの末尾を確認してください。同じ操作をもう一度押すと続きから動きます。";
+  const cj = errChannelJob(h, res);
+  let html = `<div class="card sub"><h3>エラー対処</h3>
+    <p>工程：${esc(step || "不明")}　終了コード：${esc(err.code || (res ? res.rc : "?"))}</p>
+    <p>対処のヒント：${esc(hint)}</p>
+    ${err.msg ? `<pre>${esc(err.msg)}</pre>` : ""}
+    <div class="stack"><button class="pri" data-d="again">同じ操作をもう一度（続きから再開）</button>`;
+  if (cj.job && cj.channel) {
+    html += `<label class="f" for="dReset">この工程から作り直す</label>
+      <select id="dReset">${ENGINE_ORDER.map(s => `<option${s === resetStep ? " selected" : ""}>${s}</option>`).join("")}</select>
+      <button data-d="reset">選んだ工程から作り直す準備をする</button>
+      <button data-d="edit">台本を直す（台本の欄を開く）</button>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+$("stDetail").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button[data-d]"); if (!b) return;
+  const h = findHist(curDetail); if (!h) return;
+  let res = null; try { res = await fetchResult(h); } catch (e) {}
+  const cj = errChannelJob(h, res);
+  if (b.dataset.d === "again") {
+    let input = null;
+    if (h.hasInput) {
+      try { input = await readText(`inbox/${h.req}.txt`, BRANCH); }
+      catch (e) { alert("前に渡した文字（inbox）を読めませんでした：" + e.message); return; }
+    }
+    const e2 = await runRemote({label: h.label, argv: h.argv, preview: h.preview, motion: !!h.motion, input, after: h.after, ctx: Object.assign({}, h.ctx),
+      confirm: `「${h.label}」をもう一度動かします。\n（投稿を含む操作なら、投稿まで進みます）よろしいですか？`});
+    if (e2) openDetail(e2.req);
+  } else if (b.dataset.d === "reset") {
+    const step = $("dReset").value;
+    let argv;
+    if (cj.kind === "serial" && h.ctx.ep) {
+      // 連載は各話のコマンドに --from を付けて、その工程から作り直す（投稿しない）
+      argv = [SERIALS[cj.channel].cmd, "build", "--ep", String(h.ctx.ep), "--from", step, "--until", "compose"];
+      const e2 = await runRemote({label: `${step} から作り直す（投稿しない）`, argv, preview: ["video"], motion: !!h.motion, after: "rebuild", ctx: Object.assign({}, h.ctx),
+        confirm: `工程「${step}」から先を作り直します（それより前の生成物は使い回す。投稿はしない）。よろしいですか？`});
+      if (e2) openDetail(e2.req);
+      return;
+    }
+    argv = ["engine", "reset", "--channel", cj.channel, "--job", cj.job, "--from", step];
+    const e2 = await runRemote({label: `${step} から作り直す準備`, argv, ctx: Object.assign({}, h.ctx, {job: cj.job}),
+      confirm: `工程「${step}」から先の完了印を外します（それより前の生成物は使い回す）。\n終わったら、元の操作をもう一度押すと、そこから作り直します。よろしいですか？`});
+    if (e2) openDetail(e2.req);
+  } else if (b.dataset.d === "edit") {
+    if (cj.kind === "blog" || cj.channel === "spacebrothers") { $("blogJob").value = cj.job; showTab("blog"); blogLoad(true); setTimeout(() => $("blogScript").scrollIntoView({behavior: "smooth"}), 600); }
+    else if (cj.kind === "serial") { showTab("senior"); toast("公開日でこの回を選び、台本の欄で直して保存してください"); }
+    else { $("srNo").value = cj.job; showTab("senior"); srLoadNumber(true); setTimeout(() => $("srScript").scrollIntoView({behavior: "smooth"}), 600); }
+  }
+});
+
+/* ============================================================ 設定 */
+$("setToken").value = token();
+$("setRepo").value = store.get("repo", "") || "oomizu3/koseiyuki-auto";
+$("setShow").addEventListener("change", () => { $("setToken").type = $("setShow").checked ? "text" : "password"; });
+$("setSave").addEventListener("click", () => {
+  const t = $("setToken").value.trim(), r = $("setRepo").value.trim() || "oomizu3/koseiyuki-auto";
+  if (!/^[\w.-]+\/[\w.-]+$/.test(r)) { alert("リポジトリは「持ち主/名前」の形で入れてください。"); return; }
+  const ok = store.set("token", t) && store.set("repo", r);
+  branchReady = false; cacheClear();
+  $("setNote").textContent = ok ? "保存しました。" : "保存できませんでした（ブラウザの設定で保存が止められているかもしれません）。";
+  if (ok) { srDatesBuilt = false; blogJobsLoaded = false; pollOnce(); }
+});
+$("setTest").addEventListener("click", async () => {
+  $("setNote").textContent = "確かめています…";
+  try {
+    const r = await gh(`/repos/${repo()}`);
+    let wf = "";
+    try { await gh(`/repos/${repo()}/actions/workflows/${WORKFLOW}`); wf = "workflow kpipe-remote.yml もあります。"; }
+    catch (e) { wf = "workflow kpipe-remote.yml が見つかりません（" + e.message + "）。"; }
+    $("setNote").textContent = `つながりました：${r.full_name}（${r.private ? "非公開" : "公開"}）。${wf}`;
+  } catch (e) { $("setNote").textContent = "つながりません：" + e.message; }
+});
+document.querySelectorAll(".fsset").forEach(b => b.addEventListener("click", () => { store.set("fs", Number(b.dataset.k)); store.set("scriptExtra", 0); applyFs(); }));
+$("setDoctor").addEventListener("click", () => runRemote({label: "環境チェック", argv: ["doctor"]}));
+function splitArgs(s) {
+  const out = []; let cur = ""; let q = null; let has = false;
+  for (const c of s.trim()) {
+    if (q) { if (c === q) q = null; else cur += c; }
+    else if (c === '"' || c === "'" || c === "“" || c === "”") { q = (c === "“") ? "”" : c; has = true; }
+    else if (/\s/.test(c)) { if (cur || has) { out.push(cur); cur = ""; has = false; } }
+    else cur += c;
+  }
+  if (q) throw new Error("引用符が閉じていません");
+  if (cur || has) out.push(cur);
+  return out;
+}
+$("setCmdRun").addEventListener("click", () => {
+  let args;
+  try { args = splitArgs($("setCmd").value); } catch (e) { alert(e.message); return; }
+  if (args[0] === "kpipe") args.shift();
+  if (args[0] === "python" ) { alert("kpipe の後ろの引数だけを入れてください。"); return; }
+  if (!args.length) { alert("引数を入れてください。"); return; }
+  if (!ALLOWED_HEADS.includes(args[0])) { alert(`先頭の語「${args[0]}」は使えません。\n使えるのは：${ALLOWED_HEADS.join(" ")}`); return; }
+  if (args[0] === "family" && args[1] === "auth") { alert("family auth はスマホからは使えません。"); return; }
+  const pv = $("setCmdPrev").value;
+  const risky = /(^| )(build|run|upload)( |$)/.test(args.join(" ")) && !args.includes("--until") && !args.includes("--no-upload") && !args.includes("--dry-run");
+  runRemote({label: "その他：" + args.slice(0, 3).join(" "), argv: args, preview: pv ? [pv] : [], motion: $("setCmdMotion").checked,
+    confirm: `次の引数で kpipe を動かします。\n\n${args.join(" ")}\n\n` + (risky ? "投稿まで進む操作かもしれません。取り消せません。" : "") + "よろしいですか？"});
+});
+$("setCacheClear").addEventListener("click", () => { cacheClear(); backlogRows = null; toast("控えを消しました"); });
+
+/* ============================================================ 起動 */
+function init() {
+  applyFs();
+  $("srMotion").checked = !!store.get("srMotion", false);
+  $("blogJob").value = store.get("blogJob", "");
+  $("srNo").value = store.get("srNo", "");
+  $("fmName").value = store.get("fmName", "");
+  fmRenderWorks();
+  rtRender();
+  renderStatusList(); updateActiveInfo();
+  let tab = store.get("tab", "blog");
+  if (!token()) tab = "settings";
+  if (!document.getElementById("tab-" + tab)) tab = "blog";
+  showTab(tab);
+  if (token()) {
+    if ($("blogJob").value && tab === "blog") blogLoad();
+    pollOnce();
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && hist.some(isActive)) pollOnce(); });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+init();
+</script>
+</body>
+</html>
