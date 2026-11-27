@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-26T18:59:03+00:00",
+ "updated": "2026-11-27T03:36:02+00:00",
  "count": 73,
  "prices": {
   "B0HRR7MYWR": {
@@ -27,8 +27,9 @@
    "display": "￥1,940"
   },
   "419865607X": {
-   "amount": 2090,
-   "display": "￥2,090"
+   "amount": 321,
+   "display": "中古 ￥321",
+   "used": true
   },
   "B0BZJMS6PQ": {
    "amount": 1045,
@@ -44,8 +45,8 @@
    "display": "￥842"
   },
   "4569838618": {
-   "amount": 902,
-   "display": "中古 ￥902",
+   "amount": 484,
+   "display": "中古 ￥484",
    "used": true
   },
   "B07HXW6QX1": {
